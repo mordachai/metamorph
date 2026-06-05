@@ -14,6 +14,8 @@ Groups two or more actors into a **form group**. A HUD button lets you instantly
 
 ## Setup
 
+<img width="885" height="461" alt="Screenshot from 2026-06-05 17-51-37" src="https://github.com/user-attachments/assets/2d66e769-b91a-4b90-bf74-ade0625f9c46" />
+
 1. Install the module and enable it in your world.
 2. Open the **Actors** sidebar, right-click any actor, and choose **Metamorph: Manage Forms**.
 3. Add the other actors that represent alternate forms of this character.
@@ -25,6 +27,8 @@ Groups two or more actors into a **form group**. A HUD button lets you instantly
 ## Swapping Forms
 
 Select a token on the canvas and open its HUD. Click the **masks icon** to open the form picker. Click any portrait to swap to that form.
+
+<img width="494" height="303" alt="Screenshot from 2026-06-05 18-12-11" src="https://github.com/user-attachments/assets/c6a7754f-618e-464c-81bb-f295d260816f" />
 
 - **Left-click** the HUD button — opens the portrait picker (if the actor is in a group with 2+ forms).
 - **Right-click** the HUD button — opens the group manager.
