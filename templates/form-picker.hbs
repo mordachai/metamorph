@@ -1,0 +1,8 @@
+<div class="metamorph-picker-inner">
+  {{#each forms}}
+  <div class="mm-form-portrait {{#if active}}active{{/if}}" data-actor-id="{{actorId}}" data-action="pickForm">
+    <img src="{{img}}" alt="{{label}}">
+    <span class="mm-form-label">{{label}}</span>
+  </div>
+  {{/each}}
+</div>

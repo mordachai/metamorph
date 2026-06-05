@@ -1,0 +1,46 @@
+<div class="mm-browser-inner">
+  <div class="mm-search-bar">
+    <i class="fa-solid fa-magnifying-glass"></i>
+    <input class="mm-search-input" type="text" placeholder="Search actors…">
+  </div>
+
+  <div class="mm-browser-list">
+    {{#each folders}}
+    <div class="mm-folder open" data-folder-id="{{id}}">
+      <div class="mm-folder-header" data-action="toggleFolder">
+        <i class="fa-solid fa-chevron-right mm-folder-chevron"></i>
+        <i class="fa-solid fa-folder"></i>
+        <span>{{name}}</span>
+      </div>
+      <div class="mm-folder-contents">
+        {{#each actors}}
+        <div class="mm-actor-row" data-actor-id="{{id}}" data-name="{{nameLower}}" data-action="pickActor">
+          <img src="{{img}}" alt="{{name}}">
+          <span class="mm-actor-name">{{name}}</span>
+          <span class="mm-actor-type">{{type}}</span>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/each}}
+
+    {{#if ungrouped.length}}
+    <div class="mm-folder open mm-ungrouped">
+      <div class="mm-folder-header" data-action="toggleFolder">
+        <i class="fa-solid fa-chevron-right mm-folder-chevron"></i>
+        <i class="fa-solid fa-users"></i>
+        <span>Ungrouped</span>
+      </div>
+      <div class="mm-folder-contents">
+        {{#each ungrouped}}
+        <div class="mm-actor-row" data-actor-id="{{id}}" data-name="{{nameLower}}" data-action="pickActor">
+          <img src="{{img}}" alt="{{name}}">
+          <span class="mm-actor-name">{{name}}</span>
+          <span class="mm-actor-type">{{type}}</span>
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/if}}
+  </div>
+</div>

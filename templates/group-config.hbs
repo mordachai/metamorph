@@ -1,0 +1,46 @@
+<div class="metamorph-config-inner">
+  <section class="mm-group-name">
+    <label class="mm-group-name-label">
+      <i class="fa-solid fa-masks-theater"></i>
+      <input type="text" name="groupName" value="{{groupName}}" placeholder="Group name">
+    </label>
+  </section>
+
+  <section class="mm-forms-list">
+    <h3>Forms <button type="button" data-action="addActor" title="Add actor to group"><i class="fa-solid fa-plus"></i></button></h3>
+
+    {{#each forms}}
+    <div class="mm-config-row" data-actor-id="{{actorId}}">
+      <img src="{{img}}" alt="{{label}}">
+      <input type="text" name="label" value="{{label}}" placeholder="Display name">
+      <button type="button" data-action="setMain" title="Set as main form" class="{{#if isMain}}mm-is-main{{/if}}">
+        <i class="fa-solid fa-star"></i>
+      </button>
+      <button type="button" data-action="removeForm" title="Remove from group">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+    {{/each}}
+
+    {{#unless forms.length}}
+    <p class="mm-hint">No group yet. Click + to add another actor.</p>
+    {{/unless}}
+  </section>
+
+  <section class="mm-hp-mode">
+    <label>HP on swap
+      <select name="hpMode">
+        {{#each hpModes}}
+        <option value="{{value}}" {{#if (eq value ../hpMode)}}selected{{/if}}>{{label}}</option>
+        {{/each}}
+      </select>
+    </label>
+  </section>
+
+  <footer class="mm-config-footer">
+    {{#if inGroup}}
+    <button type="button" data-action="dissolve" class="mm-btn-danger">Dissolve Group</button>
+    {{/if}}
+    <button type="button" data-action="save">Save &amp; Close</button>
+  </footer>
+</div>

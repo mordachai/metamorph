@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(rtk find *)",
+      "Bash(find /mnt/arch-home/gus/foundry/v14/ -name \"*.hbs\" 2>/dev/null | grep -i \"token-hud\\\\|token_hud\")",
+      "Read(//mnt/arch-home/gus/foundry/v14/**)"
+    ]
+  }
+}
