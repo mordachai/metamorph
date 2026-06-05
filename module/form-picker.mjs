@@ -84,7 +84,7 @@ export class FormPickerApp extends HandlebarsApplicationMixin(ApplicationV2) {
   async close(options) {
     this.#abort?.abort();
     this.#abort = null;
-    return super.close(options);
+    return super.close({ ...options, animate: false });
   }
 
   _positionNearAnchor() {
