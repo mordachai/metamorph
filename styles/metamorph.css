@@ -35,26 +35,23 @@
 }
 
 /* ── Form Picker (frameless ApplicationV2) ────────────────── */
-/* Frameless apps don't get the parchment background, so we
-   define our own per-theme colours using body.theme-* selectors. */
+/* Styled to match .placeable-hud .palette from foundry2.css.
+   Uses semantic vars that resolve correctly in both themes. */
 
 #metamorph-picker {
   position: fixed !important; /* Foundry appends to body as position:absolute, which
                                   blows out body scroll-height and displaces other windows.
                                   Fixed keeps it viewport-relative and out of flow. */
-  background: rgba(248, 244, 235, 0.96);
-  border: 1px solid rgba(0, 0, 0, 0.2);
-  border-radius: 8px;
   padding: 6px;
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.35);
+  background: rgba(11, 9, 10, 0.85);
+  border: 1px solid #3a3a4a;
+  border-radius: 4px;
+  pointer-events: all;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+  color: #dee9ed;
+
   animation: none !important;
   transition: none !important;
-}
-
-body.theme-dark #metamorph-picker {
-  background: rgba(15, 12, 10, 0.94);
-  border-color: rgba(255, 200, 120, 0.3);
-  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.7);
 }
 
 #metamorph-picker * {
@@ -66,7 +63,7 @@ body.theme-dark #metamorph-picker {
   display: flex;
   flex-direction: row;
   gap: 6px;
-  align-items: flex-end;
+  align-items: stretch;
 }
 
 .mm-form-portrait {
@@ -98,10 +95,10 @@ body.theme-dark #metamorph-picker {
 
 .mm-form-label {
   font-size: 10px;
-  color: var(--color-text-primary);
+  color: #dee9ed;
   max-width: 68px;
   text-align: center;
-  white-space: nowrap;
+  white-space: wrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }

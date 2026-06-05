@@ -33,8 +33,16 @@ export async function swapTokenForm(tokenDocument, targetActor) {
       bar2: proto.bar2.toObject?.() ?? proto.bar2,
     };
 
+    const sheetWasOpen = sourceActor.sheet?.rendered ?? false;
+    if (sheetWasOpen) sourceActor.sheet.close();
+
     await _transferHp(tokenDocument, sourceActor, targetActor);
     await tokenDocument.update(update);
+
+    if (canvas.hud?.token?.object === tokenDocument.object) {
+      canvas.hud.token.bind(tokenDocument.object);
+    }
+    if (sheetWasOpen) targetActor.sheet?.render(true);
   } catch (err) {
     console.error("Metamorph | swap failed:", err);
     ui.notifications.error("Metamorph: swap failed — check the console for details.");
