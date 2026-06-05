@@ -54,5 +54,5 @@ Set per group in the group manager:
 Paste this manifest URL into Foundry's module installer:
 
 ```
-https://github.com/mordachai/metamorph/releases/download/v0.1.0/module.json
+https://github.com/mordachai/metamorph/releases/download/v1.0.0/module.json
 ```
