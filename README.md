@@ -1,8 +1,16 @@
+This module is free. Wanna do a cool thing?
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W01A1ZN1)
+
+---
+
+![Foundry v13](https://img.shields.io/badge/foundry-v13-green?style=for-the-badge) ![Foundry v14](https://img.shields.io/badge/foundry-v14-blue?style=for-the-badge)  ![Github All Releases](https://img.shields.io/github/downloads/mordachai/metamorph/total.svg?style=for-the-badge) ![GitHub Release](https://img.shields.io/github/v/release/mordachai/metamorph?display_name=tag&style=for-the-badge&label=Current%20version)
+
 # Metamorph
 
-Foundry VTT module for swapping a canvas token between multiple actor forms — boss phases, lycanthropes, shapeshifters. System agnostic.
+Swap between sheets and tokens: any actor can have multiple forms. This module is a must for boss phases, polymorph spells, lycanthropes, shapeshifters, doppelgangers... System agnostic.
 
-**Compatibility:** Foundry v13–v14
+It's not just a change in the appearance, its a complete new character sheet each time, with their own data and abilities. You can share the health between them or make them completely independent.
 
 ---
 
