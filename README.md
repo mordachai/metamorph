@@ -51,6 +51,8 @@ Set per group in the group manager:
 
 ## Installation
 
+Search for _metamorph_ in Addon Modules OR
+
 Paste this manifest URL into Foundry's module installer:
 
 ```
