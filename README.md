@@ -28,7 +28,8 @@ Groups two or more actors into a **form group**. A HUD button lets you instantly
 
 Select a token on the canvas and open its HUD. Click the **masks icon** to open the form picker. Click any portrait to swap to that form.
 
-<img width="494" height="303" alt="Screenshot from 2026-06-05 18-12-11" src="https://github.com/user-attachments/assets/c6a7754f-618e-464c-81bb-f295d260816f" />
+<img width="950" height="486" alt="image" src="https://github.com/user-attachments/assets/b7e7ef6a-fa35-4c0c-9da5-15a400da21c2" />
+
 
 - **Left-click** the HUD button — opens the portrait picker (if the actor is in a group with 2+ forms).
 - **Right-click** the HUD button — opens the group manager.
