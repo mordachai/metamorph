@@ -1,0 +1,243 @@
+<div class="mm-cfg-layout">
+
+  {{!-- LEFT: Actor folder tree --}}
+  <div class="mm-cfg-left">
+
+    {{#each folders}}
+    <div class="mm-cfg-folder open" data-folder-id="{{id}}">
+      <div class="mm-cfg-folder-hdr" data-action="toggleFolder">
+        <i class="fa-solid fa-chevron-right mm-cfg-chevron"></i>
+        <span class="mm-cfg-folder-name">{{name}}</span>
+      </div>
+      <div class="mm-cfg-folder-body">
+        {{#each actors}}
+        <div class="mm-cfg-actor-row {{#if selected}}selected{{/if}} {{#if hasGroups}}has-groups{{/if}}"
+             data-actor-id="{{id}}" data-action="selectActor" title="{{name}}">
+          <img src="{{img}}" alt="{{name}}">
+          <span class="mm-cfg-actor-name">{{name}}</span>
+          {{#if hasGroups}}<i class="fa-solid fa-check mm-cfg-check"></i>{{/if}}
+        </div>
+        {{/each}}
+      </div>
+    </div>
+    {{/each}}
+
+    {{#each ungrouped}}
+    <div class="mm-cfg-actor-row {{#if selected}}selected{{/if}} {{#if hasGroups}}has-groups{{/if}}"
+         data-actor-id="{{id}}" data-action="selectActor" title="{{name}}">
+      <img src="{{img}}" alt="{{name}}">
+      <span class="mm-cfg-actor-name">{{name}}</span>
+      {{#if hasGroups}}<i class="fa-solid fa-check mm-cfg-check"></i>{{/if}}
+    </div>
+    {{/each}}
+
+  </div>
+
+  {{!-- RIGHT --}}
+  <div class="mm-cfg-right">
+
+    {{!-- Tab navigation --}}
+    <nav class="mm-cfg-tabs">
+      <button type="button" class="mm-cfg-tab {{#if (eq activeTab 'actors')}}active{{/if}}"
+              data-action="switchTab" data-tab="actors">Actors</button>
+      <button type="button" class="mm-cfg-tab {{#if (eq activeTab 'groups')}}active{{/if}}"
+              data-action="switchTab" data-tab="groups">Groups</button>
+      <button type="button" class="mm-cfg-tab {{#if (eq activeTab 'filters')}}active{{/if}}"
+              data-action="switchTab" data-tab="filters">Filters</button>
+    </nav>
+
+    {{!-- ── Actors tab ── --}}
+    {{#if (eq activeTab 'actors')}}
+    <div class="mm-cfg-tab-body">
+      {{#if actorPanel}}
+
+      <div class="mm-cfg-actor-hdr">
+        <span class="mm-cfg-sec-title">{{actorPanel.actorName}}</span>
+        <label class="mm-cfg-hp-label">HP on swap
+          <select name="hpMode">
+            {{#each actorPanel.hpModes}}
+            <option value="{{value}}" {{#if (eq value ../actorPanel.hpMode)}}selected{{/if}}>{{label}}</option>
+            {{/each}}
+          </select>
+        </label>
+      </div>
+
+      {{#if actorPanel.groups.length}}
+      <div class="mm-cfg-group-checks">
+        {{#each actorPanel.groups}}
+        <label class="mm-cfg-group-check-row">
+          <input type="checkbox" class="mm-cfg-actor-group-cb" data-group-id="{{id}}"
+                 {{#if assigned}}checked{{/if}}>
+          <span class="mm-cfg-group-check-name">{{name}}</span>
+        </label>
+        {{/each}}
+      </div>
+      {{else}}
+      <p class="hint mm-cfg-empty">No morph groups yet — create one in the <strong>Groups</strong> tab.</p>
+      {{/if}}
+
+      {{else}}
+      <p class="hint mm-cfg-prompt">Select an actor to configure their morph access.</p>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{!-- ── Groups tab ── --}}
+    {{#if (eq activeTab 'groups')}}
+    <div class="mm-cfg-tab-body">
+      <div class="mm-cfg-tab-toolbar">
+        <button type="button" data-action="addGroup" class="mm-cfg-icon-btn">
+          <i class="fa-solid fa-plus"></i> New Group
+        </button>
+      </div>
+
+      {{#if morphGroups.length}}
+      {{#each morphGroups}}
+      <div class="mm-cfg-grp-acc {{#if open}}open{{/if}}" data-group-id="{{id}}">
+
+        <div class="mm-cfg-grp-hdr">
+          <button type="button" class="mm-cfg-grp-toggle" data-action="toggleGroup" data-group-id="{{id}}"
+                  title="Expand / collapse">
+            <i class="fa-solid fa-chevron-right mm-cfg-chevron"></i>
+          </button>
+          <input type="text" class="mm-cfg-group-name" value="{{name}}"
+                 placeholder="Group name" data-group-id="{{id}}">
+          <span class="mm-hint mm-cfg-grp-count">({{presets.length}})</span>
+          <button type="button" data-action="removeGroup" data-group-id="{{id}}"
+                  title="Delete group" class="mm-cfg-grp-del">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+
+        <div class="mm-cfg-grp-body">
+          {{#each presets}}
+          <div class="mm-cfg-grp-filter-row">
+            <span class="mm-cfg-grp-filter-name">{{name}}</span>
+            <span class="mm-hint">({{count}})</span>
+            <button type="button" data-action="removeFilterFromGroup"
+                    data-group-id="{{../id}}" data-preset-id="{{id}}"
+                    title="Remove from group" class="mm-cfg-grp-filter-del">
+              <i class="fa-solid fa-xmark"></i>
+            </button>
+          </div>
+          {{/each}}
+
+          <div class="mm-cfg-grp-add-row">
+            {{#if availablePresets.length}}
+            <select class="mm-cfg-filter-select" data-group-id="{{id}}">
+              <option value="">— Add existing filter —</option>
+              {{#each availablePresets}}
+              <option value="{{id}}">{{name}} ({{count}})</option>
+              {{/each}}
+            </select>
+            {{/if}}
+            <button type="button" data-action="newFilterForGroup" data-group-id="{{id}}"
+                    class="mm-cfg-icon-btn">
+              <i class="fa-solid fa-plus"></i> New Filter
+            </button>
+          </div>
+        </div>
+
+      </div>
+      {{/each}}
+      {{else}}
+      <p class="hint mm-cfg-empty">No morph groups. Click <strong>New Group</strong> to create one.</p>
+      {{/if}}
+    </div>
+    {{/if}}
+
+    {{!-- ── Filters tab ── --}}
+    {{#if (eq activeTab 'filters')}}
+    <div class="mm-cfg-tab-body">
+
+      {{#if editingPreset}}
+      {{!-- Filter editor (full tab takeover) --}}
+      <div class="mm-cfg-preset-edit">
+        <div class="mm-cfg-edit-title">
+          {{#if editingPreset.id}}Edit: <em>{{editingPreset.name}}</em>{{else}}New Filter Preset{{/if}}
+        </div>
+        <div class="mm-fp-edit">
+          <div class="mm-fp-field">
+            <label>Name</label>
+            <input type="text" name="fp-name" value="{{editingPreset.name}}"
+                   placeholder="e.g. Druid Beasts CR≤2" autofocus>
+          </div>
+          <fieldset class="mm-fp-fieldset">
+            <legend>Sources</legend>
+            {{#each editingPreset.sourcesAvailable}}
+            <label class="mm-fp-check-row">
+              <input type="checkbox" name="fp-source" value="{{id}}" {{#if checked}}checked{{/if}}>
+              {{label}}
+            </label>
+            {{/each}}
+          </fieldset>
+          <fieldset class="mm-fp-fieldset">
+            <legend>Actor type <em class="mm-hint">(Foundry type, e.g. npc)</em></legend>
+            <div class="mm-fp-field">
+              <input type="text" name="fp-actorTypes" value="{{editingPreset.criteriaActorTypes}}"
+                     placeholder="npc, character  (comma-separated, blank = any)">
+            </div>
+          </fieldset>
+          <fieldset class="mm-fp-fieldset mm-fp-rules-fieldset">
+            <legend>Field rules <em class="mm-hint">(all must match)</em></legend>
+            <div class="mm-fp-rules-header">
+              <span class="mm-fp-col-label mm-hint">Field path</span>
+              <span class="mm-fp-col-label mm-hint">Value  (prefix &lt;= &gt;= &lt; &gt; for numbers)</span>
+            </div>
+            <div class="mm-fp-rules">
+              {{#each editingPreset.criteria.rules}}
+              <div class="mm-fp-rule">
+                <input type="text" name="fp-rule-path"  value="{{path}}"
+                       placeholder="system.details.cr" class="mm-fp-rule-path">
+                <input type="text" name="fp-rule-value" value="{{value}}"
+                       placeholder="&lt;=2  or  beast"  class="mm-fp-rule-value">
+                <button type="button" data-action="removeRule" title="Remove rule">
+                  <i class="fa-solid fa-xmark"></i>
+                </button>
+              </div>
+              {{/each}}
+            </div>
+            <button type="button" data-action="addRule" class="mm-fp-add-rule">
+              <i class="fa-solid fa-plus"></i> Add rule
+            </button>
+          </fieldset>
+        </div>
+        <footer class="mm-cfg-edit-footer">
+          <button type="button" data-action="cancelEdit">Cancel</button>
+          <button type="button" data-action="savePreset">Save Preset</button>
+        </footer>
+      </div>
+
+      {{else}}
+      {{!-- Filter list --}}
+      <div class="mm-cfg-tab-toolbar">
+        <button type="button" data-action="newPreset" class="mm-cfg-icon-btn">
+          <i class="fa-solid fa-plus"></i> New Filter
+        </button>
+      </div>
+      {{#if allPresets.length}}
+      {{#each allPresets}}
+      <div class="mm-cfg-preset-row" data-preset-id="{{id}}">
+        <span class="mm-cfg-preset-name">{{name}}</span>
+        <span class="mm-hint mm-cfg-preset-count">({{count}})</span>
+        <button type="button" data-action="editPreset"      data-preset-id="{{id}}" title="Edit">
+          <i class="fa-solid fa-pencil"></i>
+        </button>
+        <button type="button" data-action="duplicatePreset" data-preset-id="{{id}}" title="Duplicate">
+          <i class="fa-solid fa-copy"></i>
+        </button>
+        <button type="button" data-action="deletePreset"    data-preset-id="{{id}}" title="Delete">
+          <i class="fa-solid fa-trash"></i>
+        </button>
+      </div>
+      {{/each}}
+      {{else}}
+      <p class="hint mm-cfg-empty">No filter presets. Click <strong>New Filter</strong> to create one.</p>
+      {{/if}}
+      {{/if}}
+
+    </div>
+    {{/if}}
+
+  </div>
+</div>

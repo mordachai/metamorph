@@ -1,24 +1,98 @@
-import { isInGroup, isMainForm, getGroupForms, getGroupName } from "./form-group.mjs";
+import { isInGroup, isMainForm, getGroupName, getMainActor } from "./form-group.mjs";
 import { GroupConfigApp } from "./group-config.mjs";
 import { FormPickerApp } from "./form-picker.mjs";
+import { FilterPresetApp } from "./filter-preset-app.mjs";
+import { MetamorphConfigApp } from "./metamorph-config-app.mjs";
+import { performSwap } from "./token-swap.mjs";
+import { actorHasAssignments, migrateActorAssignments } from "./filter-presets.mjs";
 
 // Re-export for macro access
-export { GroupConfigApp, FormPickerApp };
+export { GroupConfigApp, FormPickerApp, FilterPresetApp, MetamorphConfigApp };
 export * from "./form-group.mjs";
 export * from "./token-swap.mjs";
+export * from "./filter-presets.mjs";
 
 Hooks.once("init", () => {
   console.log("Metamorph | Initializing");
+
+  game.settings.register("metamorph", "filterPresets", {
+    name: "Filter Presets",
+    scope: "world",
+    config: false,
+    type: Array,
+    default: [],
+  });
+
+  game.settings.register("metamorph", "morphGroups", {
+    name: "Morph Groups",
+    scope: "world",
+    config: false,
+    type: Array,
+    default: [],
+  });
+
+  game.settings.register("metamorph", "actorAssignments", {
+    name: "Actor Assignments",
+    scope: "world",
+    config: false,
+    type: Object,
+    default: {},
+  });
+
+  game.settings.registerMenu("metamorph", "configurationMenu", {
+    name: "Configuration",
+    label: "Open Configuration",
+    hint: "Manage filter presets and assign morph groups to actors.",
+    icon: "fa-solid fa-masks-theater",
+    type: MetamorphConfigApp,
+    restricted: true,
+  });
+
+  foundry.applications.handlebars.loadTemplates([
+    "modules/metamorph/templates/group-config.hbs",
+    "modules/metamorph/templates/form-picker.hbs",
+    "modules/metamorph/templates/metamorph-config-app.hbs",
+  ]);
 });
 
-// --- Token HUD: add a single button; picker is a proper ApplicationV2 ---
-// Keep this hook SYNCHRONOUS so the button is immediately available.
+Hooks.once("ready", () => {
+  migrateActorAssignments().catch(err =>
+    console.error("Metamorph | Migration failed:", err)
+  );
+
+  game.socket.on("module.metamorph", async (data) => {
+    if (!game.user.isGM) return;
+    if (data.action === "performSwap") {
+      await performSwap(data.payload).catch(err => {
+        console.error("Metamorph | socket performSwap failed:", err);
+      });
+    }
+  });
+});
+
+// ── Token HUD button ──────────────────────────────────────────
+
+Hooks.on("getSceneControlButtons", (controls) => {
+  if (!game.user.isGM) return;
+  // v14: controls is an object map keyed by control name
+  const tokenControl = controls.token ?? controls.tokens;
+  if (!tokenControl) return;
+  (tokenControl.tools ??= {})["metamorph-assign"] = {
+    name: "metamorph-assign",
+    title: "Metamorph: Configure Access",
+    icon: "fa-solid fa-masks-theater",
+    button: true,
+    onChange: () => new MetamorphConfigApp().render({ force: true }),
+  };
+});
 
 Hooks.on("renderTokenHUD", (hud, html, _data) => {
   const tokenDoc = hud.object?.document;
   if (!tokenDoc) return;
   const actor = tokenDoc.actor;
   if (!actor?.isOwner) return;
+  const mainActor = getMainActor(actor) ?? actor;
+  if (!actorHasAssignments(mainActor.id)) return;
 
   const right = html.querySelector(".col.right");
   if (!right) return;
@@ -31,59 +105,35 @@ Hooks.on("renderTokenHUD", (hud, html, _data) => {
   btn.addEventListener("click", (e) => {
     e.preventDefault();
     e.stopPropagation();
-    console.log("Metamorph | HUD button clicked, actor:", actor?.name);
     try {
-      if (isInGroup(actor) && getGroupForms(actor).length > 1) {
-        FormPickerApp.toggle(tokenDoc, btn);
-      } else {
-        new GroupConfigApp(actor).render({ force: true }).catch(err => {
-          console.error("Metamorph | GroupConfigApp render failed:", err);
-          ui.notifications.error("Metamorph: failed to open form manager.");
-        });
-      }
+      FormPickerApp.toggle(tokenDoc, btn);
     } catch (err) {
       console.error("Metamorph | HUD button error:", err);
     }
   });
 
-  btn.addEventListener("contextmenu", (e) => {
-    e.preventDefault();
-    e.stopPropagation();
-    new GroupConfigApp(actor).render({ force: true }).catch(err => {
-      console.error("Metamorph | GroupConfigApp render failed:", err);
-      ui.notifications.error("Metamorph: failed to open form manager.");
-    });
-  });
-
   right.append(btn);
 });
 
-// --- Context menu on Actor sidebar ---
-// v14: "getActorContextOptions" — entries use { label, icon, visible, onClick }.
+// ── Actor sidebar context menu ────────────────────────────────
 
 Hooks.on("getActorContextOptions", (_app, options) => {
   options.push({
-    label: "Metamorph: Manage Forms",
+    label: "Metamorph: Configure",
     icon: "fa-solid fa-masks-theater",
-    visible: (li) => {
-      const actor = game.actors.get(li.dataset.entryId);
-      return actor?.isOwner ?? false;
-    },
+    visible: (li) => game.user.isGM,
     onClick: (_event, li) => {
-      console.log("Metamorph | context menu onClick fired, entryId:", li.dataset.entryId, "li:", li);
       const actor = game.actors.get(li.dataset.entryId);
-      if (!actor) { console.warn("Metamorph | actor not found for id:", li.dataset.entryId); return; }
-      new GroupConfigApp(actor).render({ force: true }).catch(err => {
-        console.error("Metamorph | GroupConfigApp render failed:", err);
-        ui.notifications.error("Metamorph: failed to open form manager.");
+      if (!actor) return;
+      MetamorphConfigApp.openForActor(actor.id).catch(err => {
+        console.error("Metamorph | MetamorphConfigApp render failed:", err);
+        ui.notifications.error("Metamorph: failed to open configuration.");
       });
     },
   });
 });
 
-// --- Actor sidebar: group status badges ---
-// Append a masks-theater icon to each actor entry that belongs to a group.
-// Solid = main form, Regular = dependent form. Same color as the row text.
+// ── Actor sidebar badges ──────────────────────────────────────
 
 Hooks.on("renderActorDirectory", (_app, html) => {
   for (const old of html.querySelectorAll(".mm-sidebar-status")) old.remove();

@@ -1,4 +1,12 @@
 <div class="mm-browser-inner">
+  {{#if hasSources}}
+  <div class="mm-source-tabs">
+    {{#each sources}}
+    <button class="mm-source-tab {{#if active}}active{{/if}}" data-action="setSource" data-source="{{id}}">{{label}}</button>
+    {{/each}}
+  </div>
+  {{/if}}
+
   <div class="mm-search-bar">
     <i class="fa-solid fa-magnifying-glass"></i>
     <input class="mm-search-input" type="text" placeholder="Search actors…">
@@ -14,7 +22,7 @@
       </div>
       <div class="mm-folder-contents">
         {{#each actors}}
-        <div class="mm-actor-row" data-actor-id="{{id}}" data-name="{{nameLower}}" data-action="pickActor">
+        <div class="mm-actor-row" data-actor-id="{{id}}" {{#if packId}}data-pack-id="{{packId}}"{{/if}} data-name="{{nameLower}}" data-action="pickActor">
           <img src="{{img}}" alt="{{name}}">
           <span class="mm-actor-name">{{name}}</span>
           <span class="mm-actor-type">{{type}}</span>
@@ -33,7 +41,7 @@
       </div>
       <div class="mm-folder-contents">
         {{#each ungrouped}}
-        <div class="mm-actor-row" data-actor-id="{{id}}" data-name="{{nameLower}}" data-action="pickActor">
+        <div class="mm-actor-row" data-actor-id="{{id}}" {{#if packId}}data-pack-id="{{packId}}"{{/if}} data-name="{{nameLower}}" data-action="pickActor">
           <img src="{{img}}" alt="{{name}}">
           <span class="mm-actor-name">{{name}}</span>
           <span class="mm-actor-type">{{type}}</span>

@@ -1,9 +1,8 @@
 import {
-  getGroupForms, getFormData, setFormData, removeFromGroup,
-  createGroup, saveGroupOrder, dissolveGroup, isInGroup, getGroupId, getGroupName,
+  isInGroup, getGroupData, createGroup, setGroupData,
 } from "./form-group.mjs";
-import { resolveTokenImg } from "./resolve-img.mjs";
-import { ActorBrowserApp } from "./actor-browser.mjs";
+import { FilterPresetApp } from "./filter-preset-app.mjs";
+import { getFilterPresets, queryFilter } from "./filter-presets.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
 
@@ -21,13 +20,13 @@ export class GroupConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
     classes: ["metamorph-config"],
     tag: "div",
     window: { title: "Metamorph — Form Group", resizable: true },
-    position: { width: 460, height: "auto" },
+    position: { width: 460, height: 560 },
     actions: {
-      addActor: GroupConfigApp.#onAddActor,
-      removeForm: GroupConfigApp.#onRemoveForm,
-      setMain: GroupConfigApp.#onSetMain,
-      dissolve: GroupConfigApp.#onDissolve,
-      save: GroupConfigApp.#onSave,
+      toggleSection:    GroupConfigApp.#onToggleSection,
+      toggleAllSections:GroupConfigApp.#onToggleAllSections,
+      newPreset:        GroupConfigApp.#onNewPreset,
+      managePresets:    GroupConfigApp.#onManagePresets,
+      save:             GroupConfigApp.#onSave,
     },
   };
 
@@ -36,105 +35,76 @@ export class GroupConfigApp extends HandlebarsApplicationMixin(ApplicationV2) {
   };
 
   async _prepareContext() {
-    const inGroup = isInGroup(this.#actor);
-    const forms = inGroup ? getGroupForms(this.#actor) : [this.#actor];
-    const hpMode = getFormData(this.#actor)?.hpMode ?? "independent";
-    const groupName = inGroup ? getGroupName(this.#actor) : this.#actor.name;
+    const groupData = getGroupData(this.#actor) ?? {};
+    const hpMode    = groupData.hpMode    ?? "independent";
+    const groupName = groupData.groupName ?? this.#actor.name;
+
+    const allPresets = getFilterPresets();
+    const sections = await Promise.all(
+      allPresets.map(async (preset) => {
+        let actors = [];
+        try { actors = await queryFilter(preset); } catch { /* ignore */ }
+        return {
+          filterId:   preset.id,
+          filterName: preset.name,
+          actors:     actors.map(a => ({
+            actorId: a.actorId,
+            packId:  a.packId ?? null,
+            label:   a.name,
+            img:     a.img || "icons/svg/mystery-man.svg",
+          })),
+        };
+      })
+    );
 
     return {
-      inGroup,
       hpMode,
       groupName,
+      mainActor: {
+        id:   this.#actor.id,
+        name: this.#actor.name,
+        img:  this.#actor.img,
+      },
+      sections,
       hpModes: [
-        { value: "independent", label: "Independent" },
-        { value: "absolute", label: "Carry over (absolute)" },
-        { value: "percent", label: "Carry over (percent)" },
+        { value: "independent",   label: "Independent" },
+        { value: "keep-original", label: "Keep original HP" },
+        { value: "absolute",      label: "Carry over (absolute)" },
+        { value: "percent",       label: "Carry over (percent)" },
       ],
-      forms: await Promise.all(forms.map(async a => {
-        const fd = getFormData(a);
-        return {
-          actorId: a.id,
-          label: fd?.label || a.name,
-          img: await resolveTokenImg(a, "first"),
-          isMain: fd?.isMain ?? false,
-          order: fd?.order ?? 0,
-        };
-      })),
     };
   }
 
-  static async #onAddActor() {
-    const self = this;
-    // Collect already-grouped actor ids to exclude them from the browser
-    const excluded = new Set(
-      isInGroup(self.#actor) ? getGroupForms(self.#actor).map(a => a.id) : [self.#actor.id]
-    );
+  // ── Actions ──────────────────────────────────────────────────
 
-    const browser = new ActorBrowserApp(async (found) => {
-      if (isInGroup(found)) {
-        return ui.notifications.warn(`"${found.name}" is already in a Metamorph group.`);
-      }
-      if (!isInGroup(self.#actor)) {
-        await createGroup([self.#actor, found]);
-      } else {
-        const forms = getGroupForms(self.#actor);
-        await setFormData(found, {
-          groupId: getGroupId(self.#actor),
-          isMain: false,
-          order: forms.length,
-          label: found.name,
-          hpMode: getFormData(self.#actor)?.hpMode,
-          groupName: getGroupName(self.#actor),
-        });
-      }
-      self.render();
-    }, excluded);
-
-    browser.render({ force: true });
+  /** Accordion toggle — pure DOM, no re-render. */
+  static #onToggleSection(event, target) {
+    target.closest(".mm-section")?.classList.toggle("open");
   }
 
-  static async #onRemoveForm(event, target) {
-    const actorId = target.closest("[data-actor-id]")?.dataset.actorId;
-    const actor = game.actors.get(actorId);
-    if (!actor) return;
-    const forms = getGroupForms(actor);
-    if (forms.length <= 2) {
-      await dissolveGroup(actor);
-    } else {
-      await removeFromGroup(actor);
-      const remaining = getGroupForms(this.#actor);
-      const mainId = remaining.find(a => getFormData(a)?.isMain)?.id ?? remaining[0].id;
-      await saveGroupOrder(remaining, mainId);
+  static #onToggleAllSections(event, target) {
+    const sections = [...this.element.querySelectorAll(".mm-section")];
+    const anyNotOpen = sections.some(s => !s.classList.contains("open"));
+    for (const s of sections) s.classList.toggle("open", anyNotOpen);
+    const icon = target.querySelector("i");
+    if (icon) {
+      icon.className = anyNotOpen ? "fa-solid fa-angles-up" : "fa-solid fa-angles-down";
     }
-    this.render();
   }
 
-  static async #onSetMain(event, target) {
-    const actorId = target.closest("[data-actor-id]")?.dataset.actorId;
-    if (!actorId) return;
-    const forms = getGroupForms(this.#actor);
-    await saveGroupOrder(forms, actorId);
-    this.render();
+  static #onNewPreset() {
+    FilterPresetApp.openNew();
   }
 
-  static async #onDissolve() {
-    const confirmed = await Dialog.confirm({ title: "Dissolve Group", content: "Remove all form links?" });
-    if (!confirmed) return;
-    await dissolveGroup(this.#actor);
-    this.close();
+  static #onManagePresets() {
+    new FilterPresetApp().render({ force: true });
   }
 
-  static async #onSave(event, target) {
-    const hpMode = this.element.querySelector("[name=hpMode]")?.value ?? "independent";
-    const groupName = this.element.querySelector("[name=groupName]")?.value?.trim() || undefined;
-    const rows = this.element.querySelectorAll("[data-actor-id]");
-    for (const row of rows) {
-      const actor = game.actors.get(row.dataset.actorId);
-      if (!actor) continue;
-      const fd = getFormData(actor);
-      const label = row.querySelector("[name=label]")?.value ?? fd.label;
-      await setFormData(actor, { ...fd, label, hpMode, groupName });
-    }
+  static async #onSave() {
+    const hpMode    = this.element.querySelector("[name=hpMode]")?.value ?? "independent";
+    const groupName = this.element.querySelector("[name=groupName]")?.value?.trim() || this.#actor.name;
+    if (isInGroup(this.#actor)) await setGroupData(this.#actor, { hpMode, groupName });
+    else await createGroup(this.#actor, { groupName, hpMode });
     this.close();
   }
 }

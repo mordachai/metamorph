@@ -1,0 +1,95 @@
+<div class="mm-fp-inner">
+  {{#if isEdit}}
+
+  <div class="mm-fp-edit">
+    <div class="mm-fp-field">
+      <label>Name</label>
+      <input type="text" name="fp-name" value="{{preset.name}}" placeholder="e.g. Druid Beasts CR≤1" autofocus>
+    </div>
+
+    <fieldset class="mm-fp-fieldset">
+      <legend>Sources</legend>
+      {{#each sourcesAvailable}}
+      <label class="mm-fp-check-row">
+        <input type="checkbox" name="fp-source" value="{{id}}" {{#if checked}}checked{{/if}}>
+        {{label}}
+      </label>
+      {{/each}}
+    </fieldset>
+
+    <fieldset class="mm-fp-fieldset">
+      <legend>Actor type <em class="mm-hint">(Foundry document type, e.g. npc)</em></legend>
+      <div class="mm-fp-field">
+        <input type="text" name="fp-actorTypes" value="{{criteriaActorTypes}}" placeholder="npc, character  (comma-separated, leave blank for any)">
+      </div>
+    </fieldset>
+
+    <fieldset class="mm-fp-fieldset mm-fp-rules-fieldset">
+      <legend>Field rules <em class="mm-hint">(all must match)</em></legend>
+
+      <div class="mm-fp-rules-header">
+        <span class="mm-fp-col-label mm-hint">Field path</span>
+        <span class="mm-fp-col-label mm-hint">Value  (prefix &lt;= &gt;= &lt; &gt; for numbers)</span>
+      </div>
+
+      <div class="mm-fp-rules">
+        {{#each preset.criteria.rules}}
+        <div class="mm-fp-rule">
+          <input type="text" name="fp-rule-path"  value="{{path}}"  placeholder="system.details.cr" class="mm-fp-rule-path">
+          <input type="text" name="fp-rule-value" value="{{value}}" placeholder="&lt;=2  or  beast"  class="mm-fp-rule-value">
+          <button type="button" data-action="removeRule" title="Remove rule">
+            <i class="fa-solid fa-xmark"></i>
+          </button>
+        </div>
+        {{/each}}
+      </div>
+
+      <button type="button" data-action="addRule" class="mm-fp-add-rule">
+        <i class="fa-solid fa-plus"></i> Add rule
+      </button>
+    </fieldset>
+
+    <footer class="mm-fp-edit-footer">
+      <button type="button" data-action="cancelEdit">Cancel</button>
+      <button type="button" data-action="savePreset">Save Preset</button>
+    </footer>
+  </div>
+
+  {{else}}
+
+  <div class="mm-fp-list">
+    <div class="mm-fp-list-header">
+      <button type="button" data-action="newPreset">
+        <i class="fa-solid fa-plus"></i> New Filter Preset
+      </button>
+    </div>
+
+    <div class="mm-fp-list-body">
+      {{#each presets}}
+      <div class="mm-fp-row" data-preset-id="{{id}}">
+        <div class="mm-fp-row-info">
+          <span class="mm-fp-row-name">{{name}}</span>
+          <span class="mm-fp-row-count mm-hint">{{count}} actor{{#unless (eq count 1)}}s{{/unless}}</span>
+        </div>
+        <div class="mm-fp-row-actions">
+          <button type="button" data-action="editPreset" title="Edit preset">
+            <i class="fa-solid fa-pencil"></i>
+          </button>
+          <button type="button" data-action="duplicatePreset" title="Duplicate preset">
+            <i class="fa-solid fa-copy"></i>
+          </button>
+          <button type="button" data-action="deletePreset" title="Delete preset">
+            <i class="fa-solid fa-trash"></i>
+          </button>
+        </div>
+      </div>
+      {{/each}}
+
+      {{#unless presets.length}}
+      <p class="mm-fp-empty mm-hint">No filter presets yet. Create one to quickly add actors by any field path.</p>
+      {{/unless}}
+    </div>
+  </div>
+
+  {{/if}}
+</div>

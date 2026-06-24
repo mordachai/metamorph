@@ -1,0 +1,31 @@
+<div class="mm-assign-layout">
+  <div class="mm-assign-actors">
+    {{#each actors}}
+    <div class="mm-assign-actor {{#if selected}}selected{{/if}} {{#if hasAssignments}}has-assignments{{/if}}"
+         data-actor-id="{{id}}"
+         data-action="selectActor"
+         title="{{name}}">
+      <img src="{{img}}" alt="{{name}}">
+      <span class="mm-assign-actor-name">{{name}}</span>
+      {{#if hasAssignments}}<i class="fa-solid fa-check mm-assign-badge"></i>{{/if}}
+    </div>
+    {{/each}}
+  </div>
+  <div class="mm-assign-filters">
+    {{#if selectedActor}}
+      <h3 class="mm-assign-heading">{{selectedActor.name}}</h3>
+      {{#if noPresets}}
+        <p class="hint">No filter presets defined. Create some in Filter Presets first.</p>
+      {{else}}
+        {{#each filterPresets}}
+        <label class="mm-assign-filter-row">
+          <input type="checkbox" data-filter-id="{{id}}" {{#if assigned}}checked{{/if}}>
+          <span>{{name}}</span>
+        </label>
+        {{/each}}
+      {{/if}}
+    {{else}}
+      <p class="hint">Select an actor to configure which filter presets they can access.</p>
+    {{/if}}
+  </div>
+</div>

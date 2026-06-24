@@ -1,30 +1,46 @@
 <div class="metamorph-config-inner">
+
   <section class="mm-group-name">
     <label class="mm-group-name-label">
-      <i class="fa-solid fa-masks-theater"></i>
+      <img src="{{mainActor.img}}" alt="{{mainActor.name}}" class="mm-main-actor-img">
       <input type="text" name="groupName" value="{{groupName}}" placeholder="Group name">
     </label>
   </section>
 
   <section class="mm-forms-list">
-    <h3>Forms <button type="button" data-action="addActor" title="Add actor to group"><i class="fa-solid fa-plus"></i></button></h3>
-
-    {{#each forms}}
-    <div class="mm-config-row" data-actor-id="{{actorId}}">
-      <img src="{{img}}" alt="{{label}}">
-      <input type="text" name="label" value="{{label}}" placeholder="Display name">
-      <button type="button" data-action="setMain" title="Set as main form" class="{{#if isMain}}mm-is-main{{/if}}">
-        <i class="fa-solid fa-star"></i>
+    <div class="mm-forms-list-header">
+      <h3>Filter Presets</h3>
+      <button type="button" data-action="toggleAllSections" title="Expand / collapse all" class="mm-header-icon-btn">
+        <i class="fa-solid fa-angles-down"></i>
       </button>
-      <button type="button" data-action="removeForm" title="Remove from group">
-        <i class="fa-solid fa-xmark"></i>
+      <button type="button" data-action="newPreset" title="New filter preset" class="mm-header-icon-btn">
+        <i class="fa-solid fa-plus"></i>
       </button>
     </div>
-    {{/each}}
 
-    {{#unless forms.length}}
-    <p class="mm-hint">No group yet. Click + to add another actor.</p>
-    {{/unless}}
+    <div class="mm-forms-list-body">
+      {{#if sections.length}}
+      {{#each sections}}
+      <div class="mm-section open" data-filter-id="{{filterId}}">
+        <div class="mm-section-header" data-action="toggleSection">
+          <i class="fa-solid fa-chevron-right mm-section-chevron"></i>
+          <span class="mm-section-name">{{filterName}}</span>
+          <span class="mm-section-count mm-hint">{{actors.length}}</span>
+        </div>
+        <div class="mm-section-body">
+          {{#each actors}}
+          <div class="mm-config-row" data-actor-id="{{actorId}}" {{#if packId}}data-pack-id="{{packId}}"{{/if}}>
+            <img src="{{img}}" alt="{{label}}">
+            <span class="mm-config-row-label">{{label}}</span>
+          </div>
+          {{/each}}
+        </div>
+      </div>
+      {{/each}}
+      {{else}}
+      <p class="mm-hint mm-forms-empty">No filter presets yet. Click <strong>Manage Presets</strong> to create one.</p>
+      {{/if}}
+    </div>
   </section>
 
   <section class="mm-hp-mode">
@@ -38,9 +54,8 @@
   </section>
 
   <footer class="mm-config-footer">
-    {{#if inGroup}}
-    <button type="button" data-action="dissolve" class="mm-btn-danger">Dissolve Group</button>
-    {{/if}}
+    <button type="button" data-action="managePresets">Manage Presets</button>
     <button type="button" data-action="save">Save &amp; Close</button>
   </footer>
+
 </div>
