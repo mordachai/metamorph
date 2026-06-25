@@ -19,12 +19,30 @@ export async function swapTokenForm(tokenDocument, targetActor, { hpMode, isReve
     const proto = targetActor.prototypeToken;
     const textureSrc = await resolveTokenImg(targetActor, "random");
 
+    // Warm the texture cache before swapping. Otherwise `refreshToken` can fire
+    // while the token mesh still holds the previous form's (decoded) image, and
+    // third-party art modules that read/crop `mesh.texture` on refresh will cache
+    // the stale art under the new src — snapping the token back to the old image.
+    // Preloading makes the new texture available synchronously on the redraw.
+    try {
+      const loadTex = foundry.canvas?.loadTexture ?? globalThis.loadTexture;
+      if (loadTex && textureSrc) await loadTex(textureSrc);
+    } catch (err) {
+      console.warn("Metamorph | texture preload failed:", err);
+    }
+
     // Serialize the full prototype — every field, every schema version, correctly typed.
     const update = foundry.utils.deepClone(proto.toObject());
     // Internal prototype-only fields that must not appear on a placed token update
     delete update._id;
     delete update.flags;
     delete update.randomImg;
+    // Preserve the placed token's link state — copying the target prototype's
+    // actorLink would flip a player token (link=true) to false (or vice-versa).
+    // That transition re-derives appearance from the source actor's prototype,
+    // causing the swapped art/size to "flash" back. Players stay linked, NPCs
+    // stay unlinked, across both morph and revert.
+    delete update.actorLink;
     // Override controlled fields
     update.actorId      = targetActor.id;
     update.texture.src  = textureSrc;
