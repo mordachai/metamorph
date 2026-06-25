@@ -4,7 +4,7 @@
   <div class="mm-cfg-left">
 
     {{#each folders}}
-    <div class="mm-cfg-folder open" data-folder-id="{{id}}">
+    <div class="mm-cfg-folder" data-folder-id="{{id}}">
       <div class="mm-cfg-folder-hdr" data-action="toggleFolder">
         <i class="fa-solid fa-chevron-right mm-cfg-chevron"></i>
         <span class="mm-cfg-folder-name">{{name}}</span>
@@ -39,11 +39,13 @@
     {{!-- Tab navigation --}}
     <nav class="mm-cfg-tabs">
       <button type="button" class="mm-cfg-tab {{#if (eq activeTab 'actors')}}active{{/if}}"
-              data-action="switchTab" data-tab="actors">Actors</button>
+              data-action="switchTab" data-tab="actors"><i class="fa-solid fa-user-check"></i> Actors</button>
       <button type="button" class="mm-cfg-tab {{#if (eq activeTab 'groups')}}active{{/if}}"
-              data-action="switchTab" data-tab="groups">Groups</button>
+              data-action="switchTab" data-tab="groups"><i class="fa-solid fa-layer-group"></i> Groups</button>
       <button type="button" class="mm-cfg-tab {{#if (eq activeTab 'filters')}}active{{/if}}"
-              data-action="switchTab" data-tab="filters">Filters</button>
+              data-action="switchTab" data-tab="filters"><i class="fa-solid fa-filter"></i> Filters</button>
+      <button type="button" class="mm-cfg-tab {{#if (eq activeTab 'tutorial')}}active{{/if}}"
+              data-action="switchTab" data-tab="tutorial"><i class="fa-solid fa-graduation-cap"></i> Tutorial</button>
     </nav>
 
     {{!-- ── Actors tab ── --}}
@@ -53,7 +55,7 @@
 
       <div class="mm-cfg-actor-hdr">
         <span class="mm-cfg-sec-title">{{actorPanel.actorName}}</span>
-        <label class="mm-cfg-hp-label">HP on swap
+        <label class="mm-cfg-hp-label"><i class="fa-solid fa-heart-pulse"></i> HP on swap
           <select name="hpMode">
             {{#each actorPanel.hpModes}}
             <option value="{{value}}" {{#if (eq value ../actorPanel.hpMode)}}selected{{/if}}>{{label}}</option>
@@ -235,6 +237,133 @@
       <p class="hint mm-cfg-empty">No filter presets. Click <strong>New Filter</strong> to create one.</p>
       {{/if}}
       {{/if}}
+
+    </div>
+    {{/if}}
+
+    {{!-- ── Tutorial tab ── --}}
+    {{#if (eq activeTab 'tutorial')}}
+    <div class="mm-cfg-tab-body mm-cfg-tutorial">
+
+      <p class="mm-cfg-tut-intro">Three steps to set up Metamorph. Do them in order.</p>
+
+      {{!-- Step 1: Filters --}}
+      <div class="mm-cfg-tut-step">
+        <div class="mm-cfg-tut-step-num">1</div>
+        <div class="mm-cfg-tut-step-body">
+          <div class="mm-cfg-tut-step-title">
+            <i class="fa-solid fa-filter"></i> Create a Filter
+          </div>
+          <p class="mm-cfg-tut-step-desc">
+            A filter defines which actors appear in the morph picker. Go to the
+            <strong>Filters</strong> tab → <strong>New Filter</strong>. Pick a source
+            (World and/or a compendium), optionally restrict by actor type, then add
+            field rules to narrow the results.
+          </p>
+          <p class="mm-cfg-tut-step-desc">
+            Field paths depend on your game system. To find the right paths,
+            right-click an actor in the sidebar → <strong>Export Data</strong> and
+            open the <code>.json</code> file in a text editor — the structure maps
+            directly to the field paths you enter here.
+            The examples below use D&amp;D 5e paths.
+          </p>
+          <div class="mm-cfg-tut-examples-label">Examples <span class="mm-hint">(D&amp;D 5e)</span></div>
+          <div class="mm-cfg-tut-examples">
+            <div class="mm-cfg-tut-example">
+              <span class="mm-cfg-tut-ex-name">CR ≤ 2 Beasts</span>
+              <span class="mm-hint">Type: <code>npc</code> &nbsp;·&nbsp;
+                <code>system.details.type.value</code> = <code>beast</code> &nbsp;·&nbsp;
+                <code>system.details.cr</code> = <code>&lt;=2</code>
+              </span>
+            </div>
+            <div class="mm-cfg-tut-example">
+              <span class="mm-cfg-tut-ex-name">All World NPCs</span>
+              <span class="mm-hint">Source: World &nbsp;·&nbsp; Type: <code>npc</code> &nbsp;·&nbsp; no field rules</span>
+            </div>
+            <div class="mm-cfg-tut-example">
+              <span class="mm-cfg-tut-ex-name">Humanoids CR ≤ 4</span>
+              <span class="mm-hint">Type: <code>npc</code> &nbsp;·&nbsp;
+                <code>system.details.type.value</code> = <code>humanoid</code> &nbsp;·&nbsp;
+                <code>system.details.cr</code> = <code>&lt;=4</code>
+              </span>
+            </div>
+            <div class="mm-cfg-tut-example">
+              <span class="mm-cfg-tut-ex-name">Player Characters</span>
+              <span class="mm-hint">Source: World &nbsp;·&nbsp; Type: <code>character</code> &nbsp;·&nbsp; no field rules</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="mm-cfg-tut-divider"></div>
+
+      {{!-- Step 2: Groups --}}
+      <div class="mm-cfg-tut-step">
+        <div class="mm-cfg-tut-step-num">2</div>
+        <div class="mm-cfg-tut-step-body">
+          <div class="mm-cfg-tut-step-title">
+            <i class="fa-solid fa-layer-group"></i> Create a Group
+          </div>
+          <p class="mm-cfg-tut-step-desc">
+            A group bundles one or more filters into a named set. Go to the
+            <strong>Groups</strong> tab → <strong>New Group</strong> → give it a name →
+            expand it → add filters via the dropdown or <strong>New Filter</strong>.
+            An actor assigned to a group can morph into every form that matches
+            any filter in that group.
+          </p>
+        </div>
+      </div>
+
+      <div class="mm-cfg-tut-divider"></div>
+
+      {{!-- Step 3: Assign --}}
+      <div class="mm-cfg-tut-step">
+        <div class="mm-cfg-tut-step-num">3</div>
+        <div class="mm-cfg-tut-step-body">
+          <div class="mm-cfg-tut-step-title">
+            <i class="fa-solid fa-user-check"></i> Assign an Actor
+          </div>
+          <p class="mm-cfg-tut-step-desc">
+            Select an actor from the left panel, then go to the
+            <strong>Actors</strong> tab and tick the groups they should have access to.
+            A checkmark <i class="fa-solid fa-check" style="font-size:10px;color:var(--control-active-border-color,var(--color-warm-2))"></i>
+            appears on their name in the list once assigned.
+            Right-click any actor token on the canvas and choose
+            <em>Metamorph</em> to open the morph picker.
+          </p>
+        </div>
+      </div>
+
+      <div class="mm-cfg-tut-divider"></div>
+
+      {{!-- HP on Swap --}}
+      <div class="mm-cfg-tut-hp-section">
+        <div class="mm-cfg-tut-step-title">
+          <i class="fa-solid fa-heart-pulse"></i> HP on Swap
+        </div>
+        <p class="mm-cfg-tut-step-desc">
+          Set per-actor in the <strong>Actors</strong> tab. Controls what happens to
+          hit points when the token changes form.
+        </p>
+        <div class="mm-cfg-tut-hp-grid">
+          <div class="mm-cfg-tut-hp-mode">
+            <span class="mm-cfg-tut-hp-name">Independent</span>
+            <span class="mm-hint">Each form keeps its own HP. Swapping back restores the original value.</span>
+          </div>
+          <div class="mm-cfg-tut-hp-mode">
+            <span class="mm-cfg-tut-hp-name">Keep original HP</span>
+            <span class="mm-hint">The new form inherits the flat HP value the actor had before the swap.</span>
+          </div>
+          <div class="mm-cfg-tut-hp-mode">
+            <span class="mm-cfg-tut-hp-name">Carry over (absolute)</span>
+            <span class="mm-hint">Copies the current HP number to the new form, clamped to its max.</span>
+          </div>
+          <div class="mm-cfg-tut-hp-mode">
+            <span class="mm-cfg-tut-hp-name">Carry over (percent)</span>
+            <span class="mm-hint">Preserves the HP ratio — e.g. 60 % HP stays 60 % on the new form.</span>
+          </div>
+        </div>
+      </div>
 
     </div>
     {{/if}}

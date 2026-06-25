@@ -66,10 +66,11 @@
 /* Filter tile grid */
 
 .mm-picker-filters {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(4, 83px);
   gap: 6px;
-  max-width: 356px; /* 4 × 83px + 3 × 6px */
+  max-height: 250px;
+  overflow-y: auto;
 }
 
 .mm-filter-tile {
@@ -133,6 +134,8 @@
   display: grid;
   grid-template-columns: repeat(4, 72px);
   gap: 6px;
+  max-height: 370px;
+  overflow-y: auto;
 }
 
 .mm-form-base {
@@ -1262,6 +1265,145 @@
   padding: 8px 14px;
   border-top: 1px solid var(--color-fieldset-border);
   flex-shrink: 0;
+}
+
+/* ── Tutorial tab ────────────────────────────────────────── */
+
+.mm-cfg-tutorial {
+  gap: 0;
+  padding: 12px 16px;
+}
+
+.mm-cfg-tut-intro {
+  font-size: 12px;
+  color: var(--color-text-subtle);
+  margin: 0 0 14px;
+  font-style: italic;
+}
+
+.mm-cfg-tut-step {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  padding: 6px 0;
+}
+
+.mm-cfg-tut-step-num {
+  flex-shrink: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--control-active-border-color, var(--color-warm-2));
+  color: #fff;
+  font-size: 13px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-top: 1px;
+  opacity: 0.85;
+}
+
+.mm-cfg-tut-step-body {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.mm-cfg-tut-step-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.mm-cfg-tut-step-title i {
+  color: var(--color-text-subtle);
+  font-size: 12px;
+}
+
+.mm-cfg-tut-step-desc {
+  font-size: 12px;
+  color: var(--color-text-secondary, var(--color-text-primary));
+  margin: 0;
+  line-height: 1.5;
+}
+
+.mm-cfg-tut-examples-label {
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--color-text-subtle);
+  margin-top: 2px;
+}
+
+.mm-cfg-tut-examples {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  border-left: 2px solid var(--color-fieldset-border);
+  padding-left: 10px;
+}
+
+.mm-cfg-tut-example {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.mm-cfg-tut-ex-name {
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.mm-cfg-tut-example .mm-hint code {
+  font-size: 10px;
+  background: rgba(128,128,128,0.15);
+  border-radius: 2px;
+  padding: 0 3px;
+  font-family: monospace;
+}
+
+.mm-cfg-tut-divider {
+  height: 1px;
+  background: var(--color-fieldset-border);
+  margin: 10px 0;
+}
+
+.mm-cfg-tut-hp-section {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0;
+}
+
+.mm-cfg-tut-hp-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.mm-cfg-tut-hp-mode {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-fieldset-border);
+  border-radius: 4px;
+  background: rgba(0,0,0,0.06);
+}
+
+.mm-cfg-tut-hp-name {
+  font-size: 12px;
+  font-weight: 700;
+  color: var(--color-text-primary);
 }
 
 /* ── Actor Assignment App (deprecated, kept for compat) ───── */
