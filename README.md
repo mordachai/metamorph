@@ -144,15 +144,13 @@ Filter rules are `{ path, value }`. `value` may be a comparison (`<=2`, `>=4`, `
 
 Hooks: `metamorph.preMorph` (return `false` to cancel), `metamorph.morph`, `metamorph.revert`.
 
-### Examples
+## Examples
 
-**Vagabond Polymorph Spell Hotbar Macro**
+### Vagabond Polymorph Spell Hotbar Macro
 
 1. **Select** your caster
 2. Mark your **target** (can be self)
 3. **Click** on the macro will display all available option for you to morph
-
----
 
 The caster can revert back clicking on the macro again, if caster selection and target making is ok.
 
@@ -192,7 +190,7 @@ await Metamorph.polymorph(targetToken, {
 
 ---
 
-**Revert macro:**
+### Universal Revert Macro
 
 ```js
 /* REVERT FORM — back to original actor */
@@ -205,13 +203,17 @@ if (!token) return ui.notifications.warn("Target or select a token to revert.");
 await MM.revert(token);
 ```
 
+---
+
 **Find your Actor compendium ids** (use as filter `sources`):
 
 ```js
 game.packs.filter(p => p.metadata.type === "Actor").map(p => p.collection);
 ```
 
-**D&D 5e — Wild Shape** (beasts up to a CR that scales with druid level, HP carried as %):
+---
+
+### D&D 5e — Wild Shape (beasts up to a CR that scales with druid level, HP carried as %):
 
 ```js
 const token = canvas.tokens.controlled[0];
@@ -233,7 +235,9 @@ await Metamorph.polymorph(token, {
 });
 ```
 
-**Pathfinder 2e — battle form** (bestiary creatures at or below your level):
+---
+
+### Pathfinder 2e — battle form (bestiary creatures at or below your level):
 
 ```js
 const token = canvas.tokens.controlled[0];
@@ -250,7 +254,9 @@ await Metamorph.polymorph(token, {
 });
 ```
 
-**Shadowdark — transform** (world NPCs of level 3 or less; swap `sources` for your monster pack):
+---
+
+### Shadowdark — transform (world NPCs of level 3 or less; swap `sources` for your monster pack):
 
 ```js
 const token = canvas.tokens.controlled[0];
@@ -266,7 +272,7 @@ await Metamorph.polymorph(token, {
 });
 ```
 
-**Direct swap and revert** (any system, by uuid):
+### Direct swap and revert** (any system, by uuid):
 
 ```js
 const token = canvas.tokens.controlled[0];
@@ -274,7 +280,9 @@ await Metamorph.morph(token, "Compendium.dnd5e.monsters.Actor.<id>");
 await Metamorph.revert(token);   // later
 ```
 
-**Query without UI** (build your own automation):
+---
+
+### Query without UI** (build your own automation):
 
 ```js
 const beasts = await Metamorph.queryFilter({
@@ -283,6 +291,8 @@ const beasts = await Metamorph.queryFilter({
 });
 // → [{ actorId, packId, name, img, type }, ...]
 ```
+
+---
 
 ---
 
