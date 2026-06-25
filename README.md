@@ -54,7 +54,7 @@ Open the configuration window: **scene controls toolbar → masks icon**, or rig
 
 ### Actor Forms (Actors tab)
 
-<img width="833" alt="image" src="https://github.com/user-attachments/assets/0cc701a9-e9f6-402b-8c72-544a599aa0f9" />
+<img width="943" alt="image" src="https://github.com/user-attachments/assets/7d2cbbbd-d4e0-4679-9aed-4ec987b350d6" />
 
 1. Click an actor in the left panel → **Actors** tab.
 2. Set the **HP on swap** mode.
