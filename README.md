@@ -1,4 +1,4 @@
-<img width="1134" height="681" alt="image" src="https://github.com/user-attachments/assets/ba247c02-0795-4820-a03d-1f6af3188798" />This module is free. Wanna do a cool thing?
+This module is free. Wanna do a cool thing?
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W01A1ZN1)
 
@@ -8,7 +8,9 @@
 
 # Metamorph
 
-Swap between sheets and tokens: any actor can have multiple forms. This module is a must for boss phases, polymorph spells, lycanthropes, shapeshifters, doppelgangers... System agnostic.
+Swap between sheets and tokens: any actor can have multiple forms. This module is a must for boss phases, polymorph spells, lycanthropes, shapeshifters, doppelgangers... System agnostic, check the **Tutorial** tab.
+
+<img width="950" alt="image" src="https://github.com/user-attachments/assets/1a3411e1-a8d8-4dce-8314-aa15625ab338" />
 
 It's not just a change in appearance — it's a complete new character sheet each time, with its own data and abilities. You can share health between forms or keep them fully independent.
 
