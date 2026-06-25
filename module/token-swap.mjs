@@ -95,10 +95,16 @@ async function _transferHp(sourceActor, targetActor, hpModeOverride) {
 
 // ── On-demand import + folder management ──────────────────────
 
+async function getOrCreateMetamorphRootFolder() {
+  return game.folders.find(f => f.type === "Actor" && f.name === "Metamorph" && !f.folder)
+    ?? await Folder.create({ name: "Metamorph", type: "Actor", color: "#4a1a6b" });
+}
+
 export async function getOrCreateMetamorphFolder(mainActor) {
-  const folderName = `Metamorph - ${mainActor.name}`;
-  return game.folders.find(f => f.type === "Actor" && f.name === folderName)
-    ?? await Folder.create({ name: folderName, type: "Actor", color: "#4a1a6b" });
+  const root = await getOrCreateMetamorphRootFolder();
+  const folderName = `${mainActor.name} - morphs`;
+  return game.folders.find(f => f.type === "Actor" && f.name === folderName && f.folder?.id === root.id)
+    ?? await Folder.create({ name: folderName, type: "Actor", color: "#4a1a6b", folder: root.id });
 }
 
 /**
@@ -145,6 +151,10 @@ export async function performSwap({ sceneId, tokenId, mainActorId, packId, actor
         sourcePackId:  packId,
         sourceActorId: actorId,
       });
+      // Mirror the main actor's ownership so whoever controls the base form keeps
+      // control of the morphed form — otherwise an imported compendium actor lands
+      // with default (GM-only) ownership and the player loses control of the token.
+      await targetActor.update({ ownership: foundry.utils.deepClone(mainActor.ownership) });
     }
   } else {
     // World actor (base form = mainActor, or manually-added world actor)
@@ -164,10 +174,14 @@ export async function performSwap({ sceneId, tokenId, mainActorId, packId, actor
     await tokenDoc.setFlag(MODULE, "mainActorId", mainActorId);
   }
 
-  // Delete the previous temp actor now that the token has moved on
+  // Delete the previous temp actor now that the token has moved on — but only if
+  // no other placed token still uses it. During combat a player may morph several
+  // forms before reverting; a shared/cached temp actor must survive until the last
+  // token leaves it. (This token already updated its actorId above, so it won't match.)
   if (prevTempActorId && prevTempActorId !== actorId) {
     const prev = game.actors.get(prevTempActorId);
-    if (prev && isTempActor(prev)) await prev.delete();
+    const stillInUse = game.scenes.some(s => s.tokens.some(t => t.actorId === prevTempActorId));
+    if (prev && isTempActor(prev) && !stillInUse) await prev.delete();
   }
 }
 

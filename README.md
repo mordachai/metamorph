@@ -146,6 +146,65 @@ Hooks: `metamorph.preMorph` (return `false` to cancel), `metamorph.morph`, `meta
 
 ### Examples
 
+**Vagabond Polymorph Spell Hotbar Macro**
+
+1. **Select** your caster
+2. Mark your **target** (can be self)
+3. **Click** on the macro will display all available option for you to morph
+
+---
+
+The caster can revert back clicking on the macro again, if caster selection and target making is ok.
+
+```js
+if (!globalThis.Metamorph) return ui.notifications.error("Metamorph module not active.");
+
+const casterActor = canvas.tokens.controlled[0]?.actor ?? game.user.character;
+if (!casterActor) return ui.notifications.warn("Select your token (caster) first.");
+
+const level = Number(casterActor.getRollData()?.lvl);
+if (!Number.isFinite(level))
+  return ui.notifications.warn(`${casterActor.name} has no lvl in roll data.`);
+
+const targetToken = game.user.targets.first() ?? canvas.tokens.controlled[0];
+if (!targetToken) return ui.notifications.warn("Target a token to polymorph.");
+
+// after targetToken resolved, before level/filter:
+const form = Metamorph.getForm(targetToken);
+if (form && !form.isBase) {
+  // already morphed → offer plain revert, skip filter/level entirely
+  await Metamorph.revert(targetToken, { hpMode: "keep-original" });
+  return;
+}
+
+const sources = ["world",
+  ...game.packs.filter(p => p.metadata.type === "Actor").map(p => p.collection)];
+
+await Metamorph.polymorph(targetToken, {
+  title:  `Polymorph — Beasts (HD ≤ ${level})`,
+  filter: { sources, criteria: { rules: [
+    { path: "system.beingType", value: "Beasts" },
+    { path: "system.hd",        value: `<=${level}` },
+  ]}},
+  hpMode: "keep-original",
+});
+```
+
+---
+
+**Revert macro:**
+
+```js
+/* REVERT FORM — back to original actor */
+const MM = game.modules.get("metamorph")?.api;
+if (!MM) return ui.notifications.error("Metamorph module not active.");
+
+const token = game.user.targets.first() ?? canvas.tokens.controlled[0];
+if (!token) return ui.notifications.warn("Target or select a token to revert.");
+
+await MM.revert(token);
+```
+
 **Find your Actor compendium ids** (use as filter `sources`):
 
 ```js

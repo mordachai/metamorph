@@ -1650,19 +1650,24 @@
   cursor: pointer;
 }
 
-/* ── API selector grid (DialogV2 via Metamorph.promptForm/polymorph) ── */
-.metamorph-api-picker .mm-api-grid {
+/* ── API selector grid (DialogV2 via Metamorph.promptForm/polymorph) ──
+   Selectors anchored on .mm-api-grid (not the window class) so they apply
+   regardless of where DialogV2 places its classes. */
+.mm-api-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 90px));
+  align-items: stretch;    /* every cell fills the row height (uniform) */
   gap: 8px;
+  max-width: 392px;        /* 4×90 + 3×8 gap + 8 padding — never widens past 4 fixed cells */
   max-height: 60vh;
   overflow-y: auto;
   padding: 4px;
 }
-.metamorph-api-picker .mm-api-form {
+.mm-api-grid .mm-api-form {
   display: flex;
   flex-direction: column;
   align-items: center;
+  justify-content: flex-start;   /* portrait + name hug the top of the cell */
   gap: 4px;
   padding: 6px 4px;
   background: rgba(0, 0, 0, 0.25);
@@ -1670,24 +1675,40 @@
   border-radius: 6px;
   cursor: pointer;
   width: 100%;
+  min-width: 0;          /* allow grid track to shrink — prevents img overflow into neighbors */
   height: auto;
   line-height: normal;
+  overflow: hidden;      /* clip anything larger than the cell */
   transition: border-color 0.15s, box-shadow 0.15s;
 }
-.metamorph-api-picker .mm-api-form:hover {
+.mm-api-grid .mm-api-form:hover {
   border-color: var(--color-shadow-primary, #ff6400);
   box-shadow: 0 0 6px var(--color-shadow-primary, #ff6400);
 }
-.metamorph-api-picker .mm-api-form img {
-  width: 64px;
-  height: 64px;
+.mm-api-grid .mm-api-form.mm-revert {
+  border-color: #4a90d9;
+  background: rgba(74, 144, 217, 0.18);
+}
+.mm-api-grid .mm-api-form.mm-revert:hover {
+  border-color: #6fb3f2;
+  box-shadow: 0 0 6px #4a90d9;
+}
+.mm-api-grid .mm-api-form img {
+  display: block;
+  width: 100%;
+  max-width: 64px;
+  height: auto;
+  aspect-ratio: 1 / 1;
   object-fit: cover;
   border: none;
   border-radius: 4px;
+  flex: 0 0 auto;
 }
-.metamorph-api-picker .mm-api-form span {
+.mm-api-grid .mm-api-form span {
+  width: 100%;
   font-size: 0.75rem;
   text-align: center;
+  overflow-wrap: anywhere;   /* break long single words instead of widening the cell */
   word-break: break-word;
   line-height: 1.1;
 }

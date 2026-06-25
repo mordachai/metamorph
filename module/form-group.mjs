@@ -4,7 +4,7 @@
  * Main actor:  flags.metamorph.group = { groupName, hpMode }
  * Temp actors: flags.metamorph.temp  = { mainActorId, sourcePackId, sourceActorId }
  *
- * Temp actors live in world folder "Metamorph - <CharName>", imported on-demand
+ * Temp actors live in world folder "Metamorph/<CharName> - morphs", imported on-demand
  * and deleted when the player changes form.
  */
 

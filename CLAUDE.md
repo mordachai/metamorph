@@ -21,7 +21,7 @@ Configuration lives in **world settings** (`filter-presets.mjs` owns the CRUD):
 
 Per-actor flags:
 - Main actor: `flags.metamorph.group = { groupName, hpMode }`
-- Temp morph actor: `flags.metamorph.temp = { mainActorId, sourcePackId, sourceActorId }` — imported on demand into world folder `Metamorph - <name>`, deleted on next form change
+- Temp morph actor: `flags.metamorph.temp = { mainActorId, sourcePackId, sourceActorId }` — imported on demand into world folder `Metamorph/<name> - morphs`, deleted on next form change
 - Token (world-actor swaps): `flags.metamorph.mainActorId`
 
 ### Module files

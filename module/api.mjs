@@ -195,10 +195,16 @@ async function _resolveActorList({ filter, filterId, actors } = {}) {
   return out;
 }
 
-function _pickGrid(title, actors) {
+function _pickGrid(title, actors, revertCell = null) {
   return new Promise((resolve) => {
     let done = false;
     const finish = (v) => { if (!done) { done = true; resolve(v); } };
+
+    const revertHtml = revertCell ? `
+      <button type="button" class="mm-api-form mm-revert" data-revert="1">
+        <img src="${esc(revertCell.img)}" alt="">
+        <span>${esc(revertCell.name)}</span>
+      </button>` : "";
 
     const cells = actors.map((a) => `
       <button type="button" class="mm-api-form" data-actor-id="${esc(a.actorId)}" data-pack-id="${esc(a.packId ?? "")}">
@@ -207,9 +213,10 @@ function _pickGrid(title, actors) {
       </button>`).join("");
 
     const dlg = new foundry.applications.api.DialogV2({
-      window:  { title },
-      classes: ["metamorph-api-picker"],
-      content: `<div class="mm-api-grid">${cells}</div>`,
+      window:   { title },
+      classes:  ["metamorph-api-picker"],
+      position: { width: 420 },   // explicit width — stops drag re-measuring an "auto" window and reflowing the grid
+      content: `<div class="mm-api-grid">${revertHtml}${cells}</div>`,
       buttons: [{ action: "cancel", label: "Cancel" }],
     });
 
@@ -220,7 +227,9 @@ function _pickGrid(title, actors) {
     dlg.render({ force: true }).then(() => {
       for (const btn of dlg.element.querySelectorAll(".mm-api-form")) {
         btn.addEventListener("click", () => {
-          finish({ actorId: btn.dataset.actorId, packId: btn.dataset.packId || null });
+          finish(btn.dataset.revert
+            ? { revert: true }
+            : { actorId: btn.dataset.actorId, packId: btn.dataset.packId || null });
           dlg.close();
         });
       }
@@ -236,16 +245,27 @@ function _pickGrid(title, actors) {
  * @param {object}        [opts.filter]    inline filter preset object
  * @param {string}        [opts.filterId]  saved filter preset id
  * @param {Array}         [opts.actors]    explicit [{actorId, packId?, name?, img?}]
- * @returns {Promise<{actorId, packId}|null>}
+ * @param {boolean}       [opts.revert]    force-show/hide the revert cell (default: auto — shown only when morphed)
+ * @returns {Promise<{actorId, packId}|{revert: true}|null>}
  */
-export async function promptForm(token, { title = "Choose Form", filter, filterId, actors } = {}) {
-  resolveToken(token); // validate early
+export async function promptForm(token, { title = "Choose Form", filter, filterId, actors, revert } = {}) {
+  const tokenDoc = resolveToken(token); // validate early
   const list = await _resolveActorList({ filter, filterId, actors });
   if (!list.length) {
     ui.notifications.warn("Metamorph: no forms to choose from.");
     return null;
   }
-  return _pickGrid(title, list);
+
+  // First cell reverts to base form — shown only when currently morphed (override via opts.revert).
+  let revertCell = null;
+  const form = getForm(tokenDoc);
+  const showRevert = revert ?? (form && !form.isBase);
+  if (showRevert) {
+    const main = getMainActor(tokenDoc);
+    if (main) revertCell = { img: main.img || "icons/svg/mystery-man.svg", name: main.name };
+  }
+
+  return _pickGrid(title, list, revertCell);
 }
 
 /**
@@ -255,7 +275,9 @@ export async function promptForm(token, { title = "Choose Form", filter, filterI
 export async function polymorph(token, opts = {}) {
   const choice = await promptForm(token, opts);
   if (!choice) return null;
-  const res = await morph(token, choice, { hpMode: opts.hpMode });
+  const res = choice.revert
+    ? await revert(token, { hpMode: opts.hpMode })
+    : await morph(token, choice, { hpMode: opts.hpMode });
   return res?.ok ? choice : null;
 }
 
