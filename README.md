@@ -120,6 +120,113 @@ Set per actor in the **Actors tab**:
 
 ---
 
+## API
+
+For macros, modules, or systems. Exposed on `ready`:
+
+```js
+const mm = game.modules.get("metamorph").api;  // or: globalThis.Metamorph
+```
+
+`token` accepts a controlled Token, a TokenDocument, an id, or `{ sceneId, tokenId }`.
+`target` accepts an Actor, a uuid, an id, or `{ actorId, packId }`.
+
+| Call | Does |
+| --- | --- |
+| `morph(token, target, { hpMode? })` | Swap the token to a target form |
+| `revert(token)` | Return to the base form |
+| `getForm(token)` / `getMainActor(token)` | Read the current / original form |
+| `promptForm(token, opts)` | Open a portrait grid, resolve to the choice (no swap) |
+| `polymorph(token, opts)` | Prompt **and** morph — the spell entry point |
+| `queryFilter(filterOrId)` | Run a filter, return the matching actors |
+
+Filter rules are `{ path, value }`. `value` may be a comparison (`<=2`, `>=4`, `<10`, `>0`) or an exact match (`beast`). All rules must match. `hpMode`: `independent` · `keep-original` · `absolute` · `percent`.
+
+Hooks: `metamorph.preMorph` (return `false` to cancel), `metamorph.morph`, `metamorph.revert`.
+
+### Examples
+
+**Find your Actor compendium ids** (use as filter `sources`):
+
+```js
+game.packs.filter(p => p.metadata.type === "Actor").map(p => p.collection);
+```
+
+**D&D 5e — Wild Shape** (beasts up to a CR that scales with druid level, HP carried as %):
+
+```js
+const token = canvas.tokens.controlled[0];
+const druidLvl = token.actor.classes?.druid?.system?.levels ?? 1;
+const cr = Math.max(0, Math.floor(druidLvl / 3));   // illustrative — adjust to taste
+await Metamorph.polymorph(token, {
+  title: `Wild Shape (CR ≤ ${cr})`,
+  hpMode: "percent",
+  filter: {
+    sources: ["dnd5e.monsters"],
+    criteria: {
+      actorTypes: ["npc"],
+      rules: [
+        { path: "system.details.type.value", value: "beast" },
+        { path: "system.details.cr", value: `<=${cr}` },
+      ],
+    },
+  },
+});
+```
+
+**Pathfinder 2e — battle form** (bestiary creatures at or below your level):
+
+```js
+const token = canvas.tokens.controlled[0];
+const lvl = token.actor.system.details?.level?.value ?? 1;
+await Metamorph.polymorph(token, {
+  title: `Polymorph (level ≤ ${lvl})`,
+  filter: {
+    sources: ["pf2e.pathfinder-bestiary"],
+    criteria: {
+      actorTypes: ["npc"],
+      rules: [{ path: "system.details.level.value", value: `<=${lvl}` }],
+    },
+  },
+});
+```
+
+**Shadowdark — transform** (world NPCs of level 3 or less; swap `sources` for your monster pack):
+
+```js
+const token = canvas.tokens.controlled[0];
+await Metamorph.polymorph(token, {
+  title: "Transform",
+  filter: {
+    sources: ["world"],
+    criteria: {
+      actorTypes: ["NPC"],
+      rules: [{ path: "system.level.value", value: "<=3" }],
+    },
+  },
+});
+```
+
+**Direct swap and revert** (any system, by uuid):
+
+```js
+const token = canvas.tokens.controlled[0];
+await Metamorph.morph(token, "Compendium.dnd5e.monsters.Actor.<id>");
+await Metamorph.revert(token);   // later
+```
+
+**Query without UI** (build your own automation):
+
+```js
+const beasts = await Metamorph.queryFilter({
+  sources: ["dnd5e.monsters"],
+  criteria: { actorTypes: ["npc"], rules: [{ path: "system.details.cr", value: "<=1" }] },
+});
+// → [{ actorId, packId, name, img, type }, ...]
+```
+
+---
+
 ## Installation
 
 Search for _metamorph_ in Addon Modules OR paste this manifest URL into Foundry's module installer:

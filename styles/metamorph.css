@@ -1649,3 +1649,45 @@
   flex-shrink: 0;
   cursor: pointer;
 }
+
+/* ── API selector grid (DialogV2 via Metamorph.promptForm/polymorph) ── */
+.metamorph-api-picker .mm-api-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+  gap: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+  padding: 4px;
+}
+.metamorph-api-picker .mm-api-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 4px;
+  background: rgba(0, 0, 0, 0.25);
+  border: 1px solid var(--color-border-light-tertiary, #7a7971);
+  border-radius: 6px;
+  cursor: pointer;
+  width: 100%;
+  height: auto;
+  line-height: normal;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+.metamorph-api-picker .mm-api-form:hover {
+  border-color: var(--color-shadow-primary, #ff6400);
+  box-shadow: 0 0 6px var(--color-shadow-primary, #ff6400);
+}
+.metamorph-api-picker .mm-api-form img {
+  width: 64px;
+  height: 64px;
+  object-fit: cover;
+  border: none;
+  border-radius: 4px;
+}
+.metamorph-api-picker .mm-api-form span {
+  font-size: 0.75rem;
+  text-align: center;
+  word-break: break-word;
+  line-height: 1.1;
+}

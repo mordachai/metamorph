@@ -9,9 +9,13 @@ const MODULE = "metamorph";
  * Swap a canvas token to represent a different actor.
  * Copies prototype token appearance and transfers HP according to hpMode.
  */
-export async function swapTokenForm(tokenDocument, targetActor) {
+export async function swapTokenForm(tokenDocument, targetActor, { hpMode, isRevert = false } = {}) {
   try {
     const sourceActor = tokenDocument.actor;
+
+    // Cancelable pre-hook for other modules (return false to abort the swap).
+    if (Hooks.call("metamorph.preMorph", tokenDocument, targetActor, sourceActor) === false) return;
+
     const proto = targetActor.prototypeToken;
     const textureSrc = await resolveTokenImg(targetActor, "random");
 
@@ -28,22 +32,26 @@ export async function swapTokenForm(tokenDocument, targetActor) {
     const sheetWasOpen = sourceActor.sheet?.rendered ?? false;
     if (sheetWasOpen) sourceActor.sheet.close();
 
-    await _transferHp(sourceActor, targetActor);
+    await _transferHp(sourceActor, targetActor, hpMode);
     await tokenDocument.update(update);
 
     if (canvas.hud?.token?.object === tokenDocument.object) {
       canvas.hud.token.bind(tokenDocument.object);
     }
     if (sheetWasOpen) targetActor.sheet?.render(true);
+
+    // Notify other modules the swap completed (animations, effects, logging).
+    Hooks.callAll("metamorph.morph", tokenDocument, targetActor, sourceActor);
+    if (isRevert) Hooks.callAll("metamorph.revert", tokenDocument, targetActor, sourceActor);
   } catch (err) {
     console.error("Metamorph | swap failed:", err);
     ui.notifications.error("Metamorph: swap failed — check the console for details.");
   }
 }
 
-async function _transferHp(sourceActor, targetActor) {
+async function _transferHp(sourceActor, targetActor, hpModeOverride) {
   const mainActor = getMainActor(sourceActor) ?? sourceActor;
-  const mode = getGroupData(mainActor)?.hpMode ?? "independent";
+  const mode = hpModeOverride ?? getGroupData(mainActor)?.hpMode ?? "independent";
   if (mode === "independent") return;
 
   const srcHp = sourceActor.system?.attributes?.hp ?? sourceActor.system?.hp;
@@ -85,8 +93,9 @@ export async function getOrCreateMetamorphFolder(mainActor) {
  * @param {string|null} opts.packId          null = world actor / base form
  * @param {string}      opts.actorId         compendium entry id or world actor id
  * @param {string|null} opts.prevTempActorId actor to delete after swap
+ * @param {string|null} [opts.hpMode]         one-shot HP mode override for this swap
  */
-export async function performSwap({ sceneId, tokenId, mainActorId, packId, actorId, prevTempActorId }) {
+export async function performSwap({ sceneId, tokenId, mainActorId, packId, actorId, prevTempActorId, hpMode }) {
   const scene     = game.scenes.get(sceneId);
   const tokenDoc  = scene?.tokens.get(tokenId);
   const mainActor = game.actors.get(mainActorId);
@@ -126,7 +135,8 @@ export async function performSwap({ sceneId, tokenId, mainActorId, packId, actor
 
   if (!targetActor) { ui.notifications.error("Metamorph: target actor not found."); return; }
 
-  await swapTokenForm(tokenDoc, targetActor);
+  const isRevert = !packId && targetActor.id === mainActorId;
+  await swapTokenForm(tokenDoc, targetActor, { hpMode, isRevert });
 
   // Track mainActorId on the token so the HUD button and picker work for world-actor swaps
   // (compendium temp actors carry their own mainActorId flag; world actors do not)
@@ -140,5 +150,35 @@ export async function performSwap({ sceneId, tokenId, mainActorId, packId, actor
   if (prevTempActorId && prevTempActorId !== actorId) {
     const prev = game.actors.get(prevTempActorId);
     if (prev && isTempActor(prev)) await prev.delete();
+  }
+}
+
+/**
+ * Route a swap: GMs perform it directly, players delegate to the active GM
+ * via a native query and await the real result. No third-party socket lib.
+ *
+ * @param {object} payload  performSwap payload
+ * @returns {Promise<{ok: boolean, reason?: string}>}
+ */
+export async function requestSwap(payload) {
+  if (game.user.isGM) {
+    await performSwap(payload);
+    return { ok: true };
+  }
+  const gm = game.users.activeGM;
+  if (!gm) {
+    ui.notifications.warn("Metamorph: a GM must be online to change form.");
+    return { ok: false, reason: "no-gm" };
+  }
+  try {
+    const res = await gm.query("metamorph.performSwap", payload, { timeout: 30 * 1000 });
+    if (!res?.ok) {
+      ui.notifications.error(`Metamorph: form change failed${res?.reason ? ` (${res.reason})` : ""}.`);
+    }
+    return res ?? { ok: false, reason: "no-response" };
+  } catch (err) {
+    console.error("Metamorph | swap query failed:", err);
+    ui.notifications.warn("Metamorph: form change timed out or failed.");
+    return { ok: false, reason: "timeout" };
   }
 }

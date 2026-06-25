@@ -12,27 +12,53 @@ Plain ES module FoundryVTT v13/v14 module. No bundler, no transpile step. Files 
 
 ### Data model
 
-Group membership is stored entirely as actor flags (`flags.metamorph.data`). Shape:
-```js
-{ groupId, isMain, order, label, hpMode, groupName }
-```
-No server-side storage. All group queries scan `game.actors` at runtime filtering by `groupId`.
+Configuration lives in **world settings** (`filter-presets.mjs` owns the CRUD):
+
+- `filterPresets` — `[{ id, name, sources: ["world"|packId], criteria: { actorTypes[], rules: [{path, value}] } }]`
+- `morphGroups` — `[{ id, name, presetIds[] }]` (reusable, shared across actors)
+- `actorAssignments` — `{ [actorId]: groupId[] }`
+- `actorDirectSets` — `{ [actorId]: [{ id, name, actors: [{actorId, packId?, name, img}] }] }`
+
+Per-actor flags:
+- Main actor: `flags.metamorph.group = { groupName, hpMode }`
+- Temp morph actor: `flags.metamorph.temp = { mainActorId, sourcePackId, sourceActorId }` — imported on demand into world folder `Metamorph - <name>`, deleted on next form change
+- Token (world-actor swaps): `flags.metamorph.mainActorId`
 
 ### Module files
 
 | File | Role |
 |---|---|
-| `module/metamorph.mjs` | Entry point. Registers hooks: `renderTokenHUD` (adds HUD button), `getActorContextOptions` (sidebar context menu), `renderActorDirectory` (sidebar badges). |
-| `module/form-group.mjs` | Pure flag helpers: read/write/remove group membership, create groups, dissolve groups. No UI. |
-| `module/token-swap.mjs` | `swapTokenForm(tokenDoc, targetActor)` — updates token to represent target actor (copies prototype token appearance), handles HP transfer per `hpMode`. |
-| `module/group-config.mjs` | `GroupConfigApp` (ApplicationV2) — group manager dialog. Handles add/remove/reorder forms and save. Opens `ActorBrowserApp` for actor selection. |
-| `module/form-picker.mjs` | `FormPickerApp` (ApplicationV2, singleton, frameless) — portrait grid popup anchored to HUD button. Calls `swapTokenForm` on pick. |
-| `module/actor-browser.mjs` | `ActorBrowserApp` (ApplicationV2) — actor selector with folder tree and fuzzy search. Used by `GroupConfigApp`. |
-| `module/resolve-img.mjs` | `resolveTokenImg(actor, "first"|"random")` — expands wildcard token texture paths. |
+| `module/metamorph.mjs` | Entry point. Settings + `CONFIG.queries["metamorph.performSwap"]` registration; HUD button, sidebar context menu + badges, scene-control button. Exposes the API on `ready`. |
+| `module/api.mjs` | **Public API** (`game.modules.get("metamorph").api`, `globalThis.Metamorph`). Arg normalizers + `morph`/`revert`/`promptForm`/`polymorph` + filter/group/set CRUD. |
+| `module/form-group.mjs` | Flag helpers: group/temp data read/write, `getMainActorFromToken`. |
+| `module/filter-presets.mjs` | Settings CRUD for presets/groups/assignments/sets + the `queryFilter` query engine + migration. |
+| `module/token-swap.mjs` | `swapTokenForm` (token update + HP transfer + morph hooks), `performSwap` (GM-side import/dedup/delete), `requestSwap` (GM-direct vs player→GM query routing). |
+| `module/metamorph-config-app.mjs` | `MetamorphConfigApp` — main config dialog (Actors / Groups / Filters tabs). |
+| `module/form-picker.mjs` | `FormPickerApp` (singleton, frameless) — HUD portrait-grid popup. Calls `requestSwap` on pick. |
+| `module/group-config.mjs`, `actor-browser.mjs`, `actor-assignment-app.mjs`, `filter-preset-app.mjs` | Older/secondary ApplicationV2 UIs. |
+| `module/resolve-img.mjs` | `resolveTokenImg(actor, "first" \| "random")` — expands wildcard token textures. |
 
 ### HP transfer
 
-`token-swap.mjs` probes `system.attributes.hp` then `system.hp` for both source and target (system-agnostic). Modes: `independent` (no transfer), `absolute` (copy value, clamp to max), `percent` (preserve ratio).
+`token-swap.mjs` probes `system.attributes.hp` then `system.hp` for both source and target (system-agnostic). Modes: `independent` (no transfer), `keep-original`, `absolute` (clamp to max), `percent` (preserve ratio). `swapTokenForm` accepts a one-shot `hpMode` override.
+
+### Inter-client (sockets)
+
+`module.json` has `"socket": true` (required — without it emits silently fail; restart the world after changing). Privileged swaps use the **native query** system, not `game.socket` and not socketlib: players call `game.users.activeGM.query("metamorph.performSwap", payload)` and await a real `{ok}` result. See the `foundry-vtt-sockets` skill in `.claude/skills/`.
+
+### Public API
+
+Exposed on `ready` at `game.modules.get("metamorph").api` and `globalThis.Metamorph`. Key calls:
+- `morph(token, target, {hpMode?})`, `revert(token)`, `getForm(token)`, `getMainActor(token)`
+- `promptForm(token, {filter|filterId|actors, title})` → chosen `{actorId, packId}|null`
+- `polymorph(token, opts)` / `openMenu` — prompt + morph (the spell-macro entry point)
+- `queryFilter(presetOrId)`, `listFilters/getFilter/saveFilter/deleteFilter`
+- `listGroups/getGroup/saveGroup/deleteGroup`, `getActorSets/saveActorSets/assignGroups`
+- `openConfig()`, `openConfigForActor(id)`, `openPicker(token, anchorEl)`
+
+`token` accepts TokenDocument / placeable Token / id / `{sceneId, tokenId}`. `target` accepts Actor / uuid / id / `{actorId, packId}`.
+
+Hooks emitted by `swapTokenForm`: `metamorph.preMorph(tokenDoc, target, source)` (return `false` to cancel), `metamorph.morph(tokenDoc, target, source)` (every swap), and `metamorph.revert(tokenDoc, target, source)` (additionally, when returning to base form).
 
 ### Foundry API notes
 

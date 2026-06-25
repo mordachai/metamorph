@@ -5,9 +5,11 @@ import { FilterPresetApp } from "./filter-preset-app.mjs";
 import { MetamorphConfigApp } from "./metamorph-config-app.mjs";
 import { performSwap } from "./token-swap.mjs";
 import { actorHasAssignments, migrateActorAssignments } from "./filter-presets.mjs";
+import * as MetamorphAPI from "./api.mjs";
 
 // Re-export for macro access
 export { GroupConfigApp, FormPickerApp, FilterPresetApp, MetamorphConfigApp };
+export { MetamorphAPI };
 export * from "./form-group.mjs";
 export * from "./token-swap.mjs";
 export * from "./filter-presets.mjs";
@@ -80,6 +82,11 @@ Hooks.once("ready", () => {
   migrateActorAssignments().catch(err =>
     console.error("Metamorph | Migration failed:", err)
   );
+
+  // Expose the public API.
+  const mod = game.modules.get("metamorph");
+  if (mod) mod.api = MetamorphAPI;
+  globalThis.Metamorph = MetamorphAPI;
 });
 
 // ── Token HUD button ──────────────────────────────────────────
