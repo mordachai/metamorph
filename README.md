@@ -18,11 +18,33 @@ It's not just a change in appearance — it's a complete new character sheet eac
 
 ## What It Does
 
-A HUD button on any configured token opens a picker divided into **morph groups**. Click a portrait to instantly swap the token to that form. The token's appearance (portrait, size, bars, light, vision) updates from the target actor's prototype token. HP can optionally carry over.
+A HUD button on any configured token opens a form picker. Click a portrait to instantly swap the token to that form. The token's appearance (portrait, size, bars, light, vision) updates from the target actor's prototype token. HP can optionally carry over.
 
 <img width="569" alt="image" src="https://github.com/user-attachments/assets/bc8ea023-e888-4ed9-b9e8-0ef9806374ed" />
 
-Morph groups are built from **filter presets** — reusable queries that find actors by type, system field values, or compendium source. One group can be shared across as many actors as you want (two druids in the party, same group).
+There are two ways to populate the picker — use either, or both together.
+
+---
+
+## Two Ways to Set Up Forms
+
+### Actor Forms — hand-picked (best for boss phases)
+
+The simplest approach. Select an actor, go to the **Actors tab**, click **Add Set**, name it, then drag actors from the left panel (or from the Foundry actor sidebar) onto the drop zone. Each set shows up as its own tile in the HUD picker.
+
+- No filters or groups needed.
+- Actors are stored directly by name — exactly what you dragged in.
+- Sets are **per-actor** and not shared. Perfect for unique encounters: a boss with three phases, a named NPC with a transformed variant, a specific summoned form.
+
+### Filter Groups — query-based (best for druids / polymorph spells)
+
+Define a query once, reuse it everywhere. Filters scan the world and compendiums at pick-time, so new actors that match automatically appear without re-configuring anything.
+
+- **Filters tab** → define queries (actor type, field rules, sources).
+- **Groups tab** → bundle filters into a named group.
+- **Actors tab → Morph Groups** → assign groups to actors.
+
+Groups are **global** — two druids in the party can share one "Wild Shapes" group.
 
 ---
 
@@ -30,14 +52,20 @@ Morph groups are built from **filter presets** — reusable queries that find ac
 
 Open the configuration window: **scene controls toolbar → masks icon**, or right-click any actor in the sidebar → **Metamorph: Configure**.
 
-The configuration window has three tabs.
+### Actor Forms (Actors tab)
+
+<img width="833" alt="image" src="https://github.com/user-attachments/assets/0cc701a9-e9f6-402b-8c72-544a599aa0f9" />
+
+1. Click an actor in the left panel → **Actors** tab.
+2. Set the **HP on swap** mode.
+3. Under **Actor Forms** → click **Add Set**, name it, drag actors from the left panel into the drop zone.
+4. Repeat for additional sets (e.g. _Phase 1_, _Phase 2_).
 
 ### Filters tab
 
 <img width="950" alt="image" src="https://github.com/user-attachments/assets/f3db253b-12c0-4bc7-b890-17b59ee8d085" />
 
-
-Filters are the building blocks. Each filter is a named query that finds actors matching a set of rules.
+Filters are the building blocks for query-based groups. Each filter is a named query that finds actors matching a set of rules.
 
 1. Click **New Filter**.
 2. Give it a name (e.g. `Druid Beasts CR≤2`).
@@ -52,22 +80,18 @@ Groups bundle filters together and appear as sections in the HUD picker.
 
 <img width="829" alt="image" src="https://github.com/user-attachments/assets/f4dabac1-036b-4fc0-b7cb-6a8232a042bc" />
 
-
 1. Click **New Group** and name it.
 2. Expand the group (click the chevron).
-3. Use the **Add existing filter** dropdown to pick filters already defined, or click **New Filter** to create one and auto-add it to this group in one step.
+3. Use the **Add existing filter** dropdown, or click **New Filter** to create one and auto-add it in one step.
 
 Groups are global — the same group can be assigned to multiple actors.
 
-### Actors tab
+### Morph Groups (Actors tab)
 
-<img width="833" alt="image" src="https://github.com/user-attachments/assets/0cc701a9-e9f6-402b-8c72-544a599aa0f9" />
+1. Click any actor in the left panel → **Actors** tab.
+2. Under **Morph Groups**, check every group that actor should have access to.
 
-1. Click any actor in the left panel.
-2. Set the **HP on swap** mode for that actor.
-3. Check every group that actor should have access to.
-
-That's it. The HUD button appears on the token once at least one assigned group has matching actors.
+That's it. The HUD button appears on the token once at least one Actor Form set or Morph Group has actors.
 
 ---
 

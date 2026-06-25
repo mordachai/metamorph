@@ -2,6 +2,7 @@ import {
   getFilterPresets, saveFilterPreset, deleteFilterPreset, queryFilter,
   getMorphGroups, saveMorphGroup, deleteMorphGroup,
   getActorGroupIds, saveActorGroupIds, actorHasAssignments,
+  getActorDirectSets, saveActorDirectSets,
 } from "./filter-presets.mjs";
 import { getGroupData, isInGroup, createGroup, setGroupData, getTempData } from "./form-group.mjs";
 
@@ -50,6 +51,10 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
       selectActor:           MetamorphConfigApp.#onSelectActor,
       toggleFolder:          MetamorphConfigApp.#onToggleFolder,
       switchTab:             MetamorphConfigApp.#onSwitchTab,
+      // Actor Forms (direct sets)
+      addActorSet:           MetamorphConfigApp.#onAddActorSet,
+      removeActorSet:        MetamorphConfigApp.#onRemoveActorSet,
+      removeActorFromSet:    MetamorphConfigApp.#onRemoveActorFromSet,
       // Groups tab
       addGroup:              MetamorphConfigApp.#onAddGroup,
       removeGroup:           MetamorphConfigApp.#onRemoveGroup,
@@ -143,6 +148,7 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
           name:     g.name,
           assigned: actorGroupIds.includes(g.id),
         })),
+        directSets: getActorDirectSets(selectedActor.id),
       };
     }
 
@@ -215,6 +221,54 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
     this.element.querySelector("select[name=hpMode]")
       ?.addEventListener("change", async (e) => this.#saveHpMode(e.target.value));
 
+    // Actor set name rename on blur/Enter (Actors tab)
+    for (const input of this.element.querySelectorAll("input.mm-cfg-set-name[data-set-id]")) {
+      input.addEventListener("blur",    (e) => this.#renameActorSet(e.target.dataset.setId, e.target.value.trim()));
+      input.addEventListener("keydown", (e) => { if (e.key === "Enter") e.target.blur(); });
+    }
+
+    // Drag source: left sidebar actor rows
+    for (const row of this.element.querySelectorAll(".mm-cfg-actor-row[data-actor-id]")) {
+      row.setAttribute("draggable", "true");
+      row.addEventListener("dragstart", (e) => {
+        const actorId = row.dataset.actorId;
+        const actor   = game.actors.get(actorId);
+        if (!actor) return;
+        e.dataTransfer.effectAllowed = "copy";
+        e.dataTransfer.setData("application/json", JSON.stringify({
+          type: "metamorph-actor",
+          actorId: actor.id,
+          packId:  null,
+          name:    actor.name,
+          img:     actor.img || "icons/svg/mystery-man.svg",
+        }));
+      });
+    }
+
+    // Drop zones: actor set bodies (Actors tab)
+    for (const zone of this.element.querySelectorAll(".mm-cfg-set-drop[data-set-id]")) {
+      zone.addEventListener("dragover", (e) => {
+        if (!this.#canAcceptDrop(e)) return;
+        e.preventDefault();
+        zone.classList.add("drag-over");
+      });
+      zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+      zone.addEventListener("drop", async (e) => {
+        zone.classList.remove("drag-over");
+        const entry = this.#parseDrop(e);
+        if (!entry || !this.#selectedActorId) return;
+        const setId = zone.dataset.setId;
+        const sets  = foundry.utils.deepClone(getActorDirectSets(this.#selectedActorId));
+        const set   = sets.find(s => s.id === setId);
+        if (!set) return;
+        const key = `${entry.actorId}::${entry.packId ?? ""}`;
+        if (set.actors.some(a => `${a.actorId}::${a.packId ?? ""}` === key)) return;
+        set.actors.push(entry);
+        await saveActorDirectSets(this.#selectedActorId, sets);
+        this.render();
+      });
+    }
+
     // Group name rename on blur/Enter (Groups tab)
     for (const input of this.element.querySelectorAll("input.mm-cfg-group-name[data-group-id]")) {
       input.addEventListener("blur",    (e) => this.#renameGroup(e.target.dataset.groupId, e.target.value.trim()));
@@ -235,6 +289,93 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
         this.render();
       });
     }
+  }
+
+  // ── Drop helpers ──────────────────────────────────────────────
+
+  #canAcceptDrop(e) {
+    return e.dataTransfer.types.includes("application/json") ||
+           e.dataTransfer.types.includes("text/plain");
+  }
+
+  #parseDrop(e) {
+    e.preventDefault();
+    let raw;
+    try { raw = JSON.parse(e.dataTransfer.getData("application/json")); } catch { return null; }
+
+    // Internal sidebar drag
+    if (raw?.type === "metamorph-actor") {
+      return { actorId: raw.actorId, packId: raw.packId ?? null, name: raw.name, img: raw.img };
+    }
+
+    // Foundry actor sidebar drag: { type: "Actor", uuid: "Actor.ID" or "Compendium.pack.Actor.ID" }
+    if (raw?.type === "Actor" && raw?.uuid) {
+      const parts = raw.uuid.split(".");
+      if (parts[0] === "Actor") {
+        const actor = game.actors.get(parts[1]);
+        if (!actor) return null;
+        return { actorId: actor.id, packId: null, name: actor.name, img: actor.img || "icons/svg/mystery-man.svg" };
+      }
+      if (parts[0] === "Compendium") {
+        // Compendium.packId.Actor.documentId
+        const packId  = `${parts[1]}.${parts[2]}`;
+        const actorId = parts[4];
+        const name    = raw.name ?? actorId;
+        const img     = raw.img  ?? "icons/svg/mystery-man.svg";
+        return { actorId, packId, name, img };
+      }
+    }
+
+    return null;
+  }
+
+  // ── Internal helpers ──────────────────────────────────────────
+
+  // ── Actor Forms (direct sets) ─────────────────────────────────
+
+  async #renameActorSet(setId, name) {
+    if (!name || !this.#selectedActorId) return;
+    const sets = foundry.utils.deepClone(getActorDirectSets(this.#selectedActorId));
+    const set  = sets.find(s => s.id === setId);
+    if (!set || set.name === name) return;
+    set.name = name;
+    await saveActorDirectSets(this.#selectedActorId, sets);
+  }
+
+  static async #onAddActorSet() {
+    if (!this.#selectedActorId) return;
+    const sets = foundry.utils.deepClone(getActorDirectSets(this.#selectedActorId));
+    sets.push({ id: foundry.utils.randomID(), name: "New Set", actors: [] });
+    await saveActorDirectSets(this.#selectedActorId, sets);
+    this.render();
+  }
+
+  static async #onRemoveActorSet(event, target) {
+    const setId = target.dataset.setId;
+    if (!setId || !this.#selectedActorId) return;
+    const sets = getActorDirectSets(this.#selectedActorId);
+    const set  = sets.find(s => s.id === setId);
+    if (!set) return;
+    const confirmed = await Dialog.confirm({
+      title:   "Delete Actor Set",
+      content: `<p>Delete "<strong>${set.name}</strong>"?</p>`,
+    });
+    if (!confirmed) return;
+    await saveActorDirectSets(this.#selectedActorId, sets.filter(s => s.id !== setId));
+    this.render();
+  }
+
+  static async #onRemoveActorFromSet(event, target) {
+    const { setId, actorId, packId } = target.dataset;
+    if (!setId || !actorId || !this.#selectedActorId) return;
+    const sets = foundry.utils.deepClone(getActorDirectSets(this.#selectedActorId));
+    const set  = sets.find(s => s.id === setId);
+    if (!set) return;
+    set.actors = set.actors.filter(
+      a => !(a.actorId === actorId && (a.packId ?? "") === (packId ?? ""))
+    );
+    await saveActorDirectSets(this.#selectedActorId, sets);
+    this.render();
   }
 
   // ── Internal helpers ──────────────────────────────────────────

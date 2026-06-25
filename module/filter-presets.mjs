@@ -77,7 +77,28 @@ export function getActorGroups(actorId) {
 }
 
 export function actorHasAssignments(actorId) {
-  return getActorGroups(actorId).some(g => (g.presetIds?.length ?? 0) > 0);
+  if (getActorGroups(actorId).some(g => (g.presetIds?.length ?? 0) > 0)) return true;
+  return getActorDirectSets(actorId).some(s => (s.actors?.length ?? 0) > 0);
+}
+
+// ── Actor direct sets ─────────────────────────────────────────
+//
+// actorDirectSets shape:
+//   { [actorId]: [{ id: string, name: string, actors: [{actorId, packId?, name, img}] }] }
+
+function getAllDirectSets() {
+  return game.settings.get(MODULE, "actorDirectSets") ?? {};
+}
+
+export function getActorDirectSets(actorId) {
+  return getAllDirectSets()[actorId] ?? [];
+}
+
+export async function saveActorDirectSets(actorId, sets) {
+  const all = foundry.utils.deepClone(getAllDirectSets());
+  if (sets?.length) all[actorId] = sets;
+  else delete all[actorId];
+  await game.settings.set(MODULE, "actorDirectSets", all);
 }
 
 export async function saveActorGroupIds(actorId, groupIds) {

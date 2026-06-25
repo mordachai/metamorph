@@ -32,6 +32,19 @@ export function getMainActor(actor) {
   return getGroupData(actor) ? actor : null;
 }
 
+/**
+ * Like getMainActor but also checks the token document's own flags,
+ * which track mainActorId for world-actor swaps (no temp flag on the actor itself).
+ */
+export function getMainActorFromToken(tokenDoc) {
+  const actor = tokenDoc?.actor;
+  if (!actor) return null;
+  const fromActor = getMainActor(actor);
+  if (fromActor) return fromActor;
+  const mainId = tokenDoc.getFlag(MODULE, "mainActorId");
+  return mainId ? (game.actors.get(mainId) ?? null) : null;
+}
+
 export function getGroupName(actor) {
   const main = getMainActor(actor);
   return main ? (getGroupData(main)?.groupName ?? main.name) : actor.name;

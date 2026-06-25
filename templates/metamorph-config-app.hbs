@@ -12,7 +12,8 @@
       <div class="mm-cfg-folder-body">
         {{#each actors}}
         <div class="mm-cfg-actor-row {{#if selected}}selected{{/if}} {{#if hasGroups}}has-groups{{/if}}"
-             data-actor-id="{{id}}" data-action="selectActor" title="{{name}}">
+             data-actor-id="{{id}}" data-action="selectActor" title="{{name}}"
+             draggable="true" data-actor-name="{{name}}" data-actor-img="{{img}}">
           <img src="{{img}}" alt="{{name}}">
           <span class="mm-cfg-actor-name">{{name}}</span>
           {{#if hasGroups}}<i class="fa-solid fa-check mm-cfg-check"></i>{{/if}}
@@ -24,7 +25,8 @@
 
     {{#each ungrouped}}
     <div class="mm-cfg-actor-row {{#if selected}}selected{{/if}} {{#if hasGroups}}has-groups{{/if}}"
-         data-actor-id="{{id}}" data-action="selectActor" title="{{name}}">
+         data-actor-id="{{id}}" data-action="selectActor" title="{{name}}"
+         draggable="true" data-actor-name="{{name}}" data-actor-img="{{img}}">
       <img src="{{img}}" alt="{{name}}">
       <span class="mm-cfg-actor-name">{{name}}</span>
       {{#if hasGroups}}<i class="fa-solid fa-check mm-cfg-check"></i>{{/if}}
@@ -62,6 +64,57 @@
             {{/each}}
           </select>
         </label>
+      </div>
+
+      {{!-- ── Actor Forms (direct sets) ── --}}
+      <div class="mm-cfg-section-hdr">
+        <span class="mm-cfg-sec-title"><i class="fa-solid fa-users"></i> Actor Forms</span>
+        <button type="button" data-action="addActorSet" class="mm-cfg-icon-btn mm-cfg-sec-btn">
+          <i class="fa-solid fa-plus"></i> Add Set
+        </button>
+      </div>
+
+      {{#if actorPanel.directSets.length}}
+      <div class="mm-cfg-direct-sets">
+        {{#each actorPanel.directSets}}
+        <div class="mm-cfg-direct-set" data-set-id="{{id}}">
+          <div class="mm-cfg-set-hdr">
+            <input type="text" class="mm-cfg-set-name" value="{{name}}"
+                   placeholder="Set name" data-set-id="{{id}}">
+            <button type="button" data-action="removeActorSet" data-set-id="{{id}}"
+                    title="Delete set" class="mm-cfg-grp-del">
+              <i class="fa-solid fa-trash"></i>
+            </button>
+          </div>
+          <div class="mm-cfg-set-drop" data-set-id="{{id}}">
+            {{#each actors}}
+            <div class="mm-cfg-set-actor" title="{{name}}">
+              <img src="{{img}}" alt="{{name}}">
+              <span class="mm-cfg-set-actor-name">{{name}}</span>
+              <button type="button" data-action="removeActorFromSet"
+                      data-set-id="{{../id}}" data-actor-id="{{actorId}}"
+                      {{#if packId}}data-pack-id="{{packId}}"{{/if}}
+                      title="Remove" class="mm-cfg-set-actor-del">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            {{/each}}
+            {{#unless actors.length}}
+            <p class="mm-cfg-drop-hint"><i class="fa-solid fa-arrow-down"></i> Drop actors here</p>
+            {{/unless}}
+          </div>
+        </div>
+        {{/each}}
+      </div>
+      {{else}}
+      <p class="hint mm-cfg-empty mm-cfg-drop-nudge">
+        No actor forms yet. Click <strong>Add Set</strong>, name it, then drag actors from the list on the left.
+      </p>
+      {{/if}}
+
+      {{!-- ── Morph Groups ── --}}
+      <div class="mm-cfg-section-hdr mm-cfg-section-hdr--gap">
+        <span class="mm-cfg-sec-title"><i class="fa-solid fa-layer-group"></i> Morph Groups</span>
       </div>
 
       {{#if actorPanel.groups.length}}
@@ -245,9 +298,52 @@
     {{#if (eq activeTab 'tutorial')}}
     <div class="mm-cfg-tab-body mm-cfg-tutorial">
 
-      <p class="mm-cfg-tut-intro">Three steps to set up Metamorph. Do them in order.</p>
+      <p class="mm-cfg-tut-intro">Two ways to give an actor multiple forms. Use either or both together.</p>
 
-      {{!-- Step 1: Filters --}}
+      {{!-- Path A: Actor Forms --}}
+      <div class="mm-cfg-tut-step-title" style="margin-bottom:6px;">
+        <i class="fa-solid fa-users"></i> Path A — Actor Forms <span class="mm-hint">(hand-picked, best for boss phases)</span>
+      </div>
+
+      <div class="mm-cfg-tut-step">
+        <div class="mm-cfg-tut-step-num">1</div>
+        <div class="mm-cfg-tut-step-body">
+          <div class="mm-cfg-tut-step-title">
+            <i class="fa-solid fa-user-check"></i> Select an Actor
+          </div>
+          <p class="mm-cfg-tut-step-desc">
+            Click any actor in the left panel. Go to the <strong>Actors</strong> tab.
+            At the top you'll see the <strong>Actor Forms</strong> section.
+          </p>
+        </div>
+      </div>
+
+      <div class="mm-cfg-tut-step">
+        <div class="mm-cfg-tut-step-num">2</div>
+        <div class="mm-cfg-tut-step-body">
+          <div class="mm-cfg-tut-step-title">
+            <i class="fa-solid fa-plus"></i> Add a Set and Drag Actors In
+          </div>
+          <p class="mm-cfg-tut-step-desc">
+            Click <strong>Add Set</strong>, give it a name (e.g. <em>Boss Phases</em>),
+            then drag actors from the left panel — or from the Foundry actor sidebar —
+            onto the drop zone. Each set appears as its own tile in the HUD picker.
+            Actors are stored directly; no filters needed.
+          </p>
+          <p class="mm-cfg-tut-step-desc">
+            Actor Forms are <strong>per-actor</strong> and not shared. Ideal for unique
+            encounters: specific boss phases, named NPC variants, summoned forms.
+          </p>
+        </div>
+      </div>
+
+      <div class="mm-cfg-tut-divider"></div>
+
+      {{!-- Path B: Filters + Groups --}}
+      <div class="mm-cfg-tut-step-title" style="margin-bottom:6px;">
+        <i class="fa-solid fa-filter"></i> Path B — Filter Groups <span class="mm-hint">(query-based, best for druids / polymorphs)</span>
+      </div>
+
       <div class="mm-cfg-tut-step">
         <div class="mm-cfg-tut-step-num">1</div>
         <div class="mm-cfg-tut-step-body">
@@ -255,16 +351,14 @@
             <i class="fa-solid fa-filter"></i> Create a Filter
           </div>
           <p class="mm-cfg-tut-step-desc">
-            A filter defines which actors appear in the morph picker. Go to the
-            <strong>Filters</strong> tab → <strong>New Filter</strong>. Pick a source
-            (World and/or a compendium), optionally restrict by actor type, then add
-            field rules to narrow the results.
+            Go to the <strong>Filters</strong> tab → <strong>New Filter</strong>. Pick a
+            source (World and/or a compendium), optionally restrict by actor type, then
+            add field rules to narrow the results.
           </p>
           <p class="mm-cfg-tut-step-desc">
-            Field paths depend on your game system. To find the right paths,
-            right-click an actor in the sidebar → <strong>Export Data</strong> and
-            open the <code>.json</code> file in a text editor — the structure maps
-            directly to the field paths you enter here.
+            Field paths depend on your game system. Right-click an actor in the sidebar →
+            <strong>Export Data</strong> and open the <code>.json</code> file — the
+            structure maps directly to the field paths you enter here.
             The examples below use D&amp;D 5e paths.
           </p>
           <div class="mm-cfg-tut-examples-label">Examples <span class="mm-hint">(D&amp;D 5e)</span></div>
@@ -295,9 +389,6 @@
         </div>
       </div>
 
-      <div class="mm-cfg-tut-divider"></div>
-
-      {{!-- Step 2: Groups --}}
       <div class="mm-cfg-tut-step">
         <div class="mm-cfg-tut-step-num">2</div>
         <div class="mm-cfg-tut-step-body">
@@ -305,31 +396,25 @@
             <i class="fa-solid fa-layer-group"></i> Create a Group
           </div>
           <p class="mm-cfg-tut-step-desc">
-            A group bundles one or more filters into a named set. Go to the
-            <strong>Groups</strong> tab → <strong>New Group</strong> → give it a name →
+            Go to the <strong>Groups</strong> tab → <strong>New Group</strong> → name it →
             expand it → add filters via the dropdown or <strong>New Filter</strong>.
-            An actor assigned to a group can morph into every form that matches
-            any filter in that group.
+            Groups are <strong>global</strong> — the same group can be assigned to multiple actors
+            (two druids in the party sharing one "Wild Shapes" group).
           </p>
         </div>
       </div>
 
-      <div class="mm-cfg-tut-divider"></div>
-
-      {{!-- Step 3: Assign --}}
       <div class="mm-cfg-tut-step">
         <div class="mm-cfg-tut-step-num">3</div>
         <div class="mm-cfg-tut-step-body">
           <div class="mm-cfg-tut-step-title">
-            <i class="fa-solid fa-user-check"></i> Assign an Actor
+            <i class="fa-solid fa-user-check"></i> Assign to an Actor
           </div>
           <p class="mm-cfg-tut-step-desc">
-            Select an actor from the left panel, then go to the
-            <strong>Actors</strong> tab and tick the groups they should have access to.
+            Select an actor from the left panel, go to the <strong>Actors</strong> tab,
+            and tick the groups they should access under <strong>Morph Groups</strong>.
             A checkmark <i class="fa-solid fa-check" style="font-size:10px;color:var(--control-active-border-color,var(--color-warm-2))"></i>
-            appears on their name in the list once assigned.
-            Right-click any actor token on the canvas and choose
-            <em>Metamorph</em> to open the morph picker.
+            appears on their name once configured.
           </p>
         </div>
       </div>

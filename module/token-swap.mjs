@@ -1,4 +1,4 @@
-import { getGroupData, getMainActor, getTempData, isTempActor, createGroup } from "./form-group.mjs";
+import { getGroupData, getMainActor, getTempData, isTempActor, createGroup, getMainActorFromToken } from "./form-group.mjs";
 import { resolveTokenImg } from "./resolve-img.mjs";
 
 const MODULE = "metamorph";
@@ -15,25 +15,15 @@ export async function swapTokenForm(tokenDocument, targetActor) {
     const proto = targetActor.prototypeToken;
     const textureSrc = await resolveTokenImg(targetActor, "random");
 
-    const update = {
-      actorId: targetActor.id,
-      actorLink: proto.actorLink,
-      name: proto.name,
-      "texture.src": textureSrc,
-      "texture.scaleX": tokenDocument.texture.scaleX,
-      "texture.scaleY": tokenDocument.texture.scaleY,
-      "texture.tint": proto.texture.tint,
-      width: proto.width,
-      height: proto.height,
-      sight: proto.sight.toObject?.() ?? proto.sight,
-      detectionModes: proto.detectionModes,
-      light: proto.light.toObject?.() ?? proto.light,
-      disposition: proto.disposition,
-      displayName: proto.displayName,
-      displayBars: proto.displayBars,
-      bar1: proto.bar1.toObject?.() ?? proto.bar1,
-      bar2: proto.bar2.toObject?.() ?? proto.bar2,
-    };
+    // Serialize the full prototype — every field, every schema version, correctly typed.
+    const update = foundry.utils.deepClone(proto.toObject());
+    // Internal prototype-only fields that must not appear on a placed token update
+    delete update._id;
+    delete update.flags;
+    delete update.randomImg;
+    // Override controlled fields
+    update.actorId      = targetActor.id;
+    update.texture.src  = textureSrc;
 
     const sheetWasOpen = sourceActor.sheet?.rendered ?? false;
     if (sheetWasOpen) sourceActor.sheet.close();
@@ -137,6 +127,14 @@ export async function performSwap({ sceneId, tokenId, mainActorId, packId, actor
   if (!targetActor) { ui.notifications.error("Metamorph: target actor not found."); return; }
 
   await swapTokenForm(tokenDoc, targetActor);
+
+  // Track mainActorId on the token so the HUD button and picker work for world-actor swaps
+  // (compendium temp actors carry their own mainActorId flag; world actors do not)
+  if (targetActor.id === mainActorId) {
+    await tokenDoc.unsetFlag(MODULE, "mainActorId");
+  } else {
+    await tokenDoc.setFlag(MODULE, "mainActorId", mainActorId);
+  }
 
   // Delete the previous temp actor now that the token has moved on
   if (prevTempActorId && prevTempActorId !== actorId) {

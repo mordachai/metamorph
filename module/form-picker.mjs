@@ -1,5 +1,5 @@
-import { getMainActor, getTempData } from "./form-group.mjs";
-import { getFilterPresets, getActorGroups, queryFilter } from "./filter-presets.mjs";
+import { getMainActorFromToken, getTempData } from "./form-group.mjs";
+import { getFilterPresets, getActorGroups, queryFilter, getActorDirectSets } from "./filter-presets.mjs";
 import { performSwap } from "./token-swap.mjs";
 
 const { ApplicationV2, HandlebarsApplicationMixin } = foundry.applications.api;
@@ -63,11 +63,13 @@ export class FormPickerApp extends HandlebarsApplicationMixin(ApplicationV2) {
     const curPackId    = tempData?.sourcePackId  ?? null;
 
     if (this.#view === "filters") {
-      const mainActor   = getMainActor(currentActor) ?? currentActor;
+      const mainActor   = getMainActorFromToken(this.#tokenDoc) ?? currentActor;
       const actorGroups = getActorGroups(mainActor.id);
+      const directSets  = getActorDirectSets(mainActor.id);
       const allPresets  = getFilterPresets();
 
-      const sections = await Promise.all(
+      // Filter-based group sections
+      const groupSections = await Promise.all(
         actorGroups.map(async (g) => {
           const presets = allPresets.filter(p => (g.presetIds ?? []).includes(p.id));
           const seen    = new Set();
@@ -83,6 +85,23 @@ export class FormPickerApp extends HandlebarsApplicationMixin(ApplicationV2) {
           return { filterId: g.id, filterName: g.name, count: actors.length, actors };
         })
       );
+
+      // Direct actor set sections
+      const directSections = directSets
+        .filter(s => (s.actors?.length ?? 0) > 0)
+        .map(s => ({
+          filterId:   s.id,
+          filterName: s.name,
+          count:      s.actors.length,
+          actors:     s.actors.map(a => ({
+            actorId: a.actorId,
+            packId:  a.packId ?? null,
+            name:    a.name,
+            img:     a.img || "icons/svg/mystery-man.svg",
+          })),
+        }));
+
+      const sections = [...directSections, ...groupSections];
       this.#sections = sections;
       return {
         isFilterView: true,
@@ -165,7 +184,7 @@ export class FormPickerApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     const tokenDoc     = this.#tokenDoc;
     const currentActor = tokenDoc.actor;
-    const mainActor    = getMainActor(currentActor) ?? currentActor;
+    const mainActor    = getMainActorFromToken(tokenDoc) ?? currentActor;
     const tempData     = getTempData(currentActor);
     // If currently a temp actor, the temp actor itself is the "prev" to delete
     const prevTempActorId = tempData ? currentActor.id : null;

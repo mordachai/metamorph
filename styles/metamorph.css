@@ -29,7 +29,8 @@
 .mm-sidebar-status {
   flex-shrink: 0;
   font-size: 11px;
-  margin-left: 4px;
+  margin-left: auto;
+  margin-right: 6px;
   opacity: 0.75;
   align-self: center;
 }
@@ -1405,6 +1406,147 @@
   font-weight: 700;
   color: var(--color-text-primary);
 }
+
+/* ── Actor Forms (direct sets) — Actors tab ─────────────── */
+
+.mm-cfg-section-hdr {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
+}
+
+.mm-cfg-section-hdr--gap {
+  margin-top: 14px;
+  padding-top: 10px;
+  border-top: 1px solid var(--color-fieldset-border);
+}
+
+.mm-cfg-sec-btn {
+  margin-left: auto;
+}
+
+.mm-cfg-direct-sets {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.mm-cfg-direct-set {
+  border: 1px solid var(--color-fieldset-border);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.mm-cfg-set-hdr {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 6px;
+  background: rgba(0,0,0,0.12);
+}
+
+.mm-cfg-set-name {
+  flex: 1;
+  font-size: 13px;
+  font-weight: 600;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--color-text-primary);
+  padding: 0;
+  min-width: 0;
+}
+
+.mm-cfg-set-name:focus {
+  background: var(--input-background-color, rgba(255,255,255,0.05));
+  border-radius: 2px;
+  padding: 0 4px;
+}
+
+.mm-cfg-set-drop {
+  padding: 6px 8px;
+  min-height: 44px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  align-items: flex-start;
+  border-top: 1px dashed transparent;
+  transition: background 0.1s, border-color 0.1s;
+}
+
+.mm-cfg-set-drop.drag-over {
+  background: rgba(var(--color-warm-2-rgb, 200,120,40), 0.1);
+  border-color: var(--control-active-border-color, var(--color-warm-2));
+  border-style: dashed;
+}
+
+.mm-cfg-drop-hint {
+  font-size: 11px;
+  color: var(--color-text-subtle);
+  font-style: italic;
+  margin: auto;
+  padding: 4px 0;
+  pointer-events: none;
+}
+
+.mm-cfg-drop-nudge {
+  margin: 4px 0 10px;
+}
+
+.mm-cfg-set-actor {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  position: relative;
+  width: 52px;
+}
+
+.mm-cfg-set-actor img {
+  width: 48px;
+  height: 48px;
+  object-fit: cover;
+  border-radius: 4px;
+  border: 1px solid var(--color-fieldset-border);
+  display: block;
+}
+
+.mm-cfg-set-actor-name {
+  font-size: 10px;
+  color: var(--color-text-secondary, var(--color-text-primary));
+  text-align: center;
+  max-width: 52px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  line-height: 1.2;
+}
+
+.mm-cfg-set-actor-del {
+  position: absolute;
+  top: -5px;
+  right: -5px;
+  width: 16px;
+  height: 16px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  border-radius: 50%;
+  background: rgba(0,0,0,0.7);
+  border: 1px solid rgba(255,255,255,0.2);
+  color: #ccc;
+  opacity: 0;
+  cursor: pointer;
+  line-height: 1;
+}
+
+.mm-cfg-set-actor:hover .mm-cfg-set-actor-del { opacity: 1; }
+.mm-cfg-set-actor-del:hover { color: #fff; background: rgba(180,40,40,0.9); }
 
 /* ── Actor Assignment App (deprecated, kept for compat) ───── */
 

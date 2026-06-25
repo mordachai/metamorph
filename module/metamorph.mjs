@@ -1,4 +1,4 @@
-import { isInGroup, isMainForm, getGroupName, getMainActor } from "./form-group.mjs";
+import { isInGroup, isMainForm, getGroupName, getMainActor, getMainActorFromToken } from "./form-group.mjs";
 import { GroupConfigApp } from "./group-config.mjs";
 import { FormPickerApp } from "./form-picker.mjs";
 import { FilterPresetApp } from "./filter-preset-app.mjs";
@@ -33,6 +33,14 @@ Hooks.once("init", () => {
 
   game.settings.register("metamorph", "actorAssignments", {
     name: "Actor Assignments",
+    scope: "world",
+    config: false,
+    type: Object,
+    default: {},
+  });
+
+  game.settings.register("metamorph", "actorDirectSets", {
+    name: "Actor Direct Sets",
     scope: "world",
     config: false,
     type: Object,
@@ -91,7 +99,7 @@ Hooks.on("renderTokenHUD", (hud, html, _data) => {
   if (!tokenDoc) return;
   const actor = tokenDoc.actor;
   if (!actor?.isOwner) return;
-  const mainActor = getMainActor(actor) ?? actor;
+  const mainActor = getMainActorFromToken(tokenDoc) ?? actor;
   if (!actorHasAssignments(mainActor.id)) return;
 
   const right = html.querySelector(".col.right");
@@ -145,6 +153,8 @@ Hooks.on("renderActorDirectory", (_app, html) => {
       ? "fa-solid fa-masks-theater mm-sidebar-status"
       : "fa-regular fa-masks-theater mm-sidebar-status";
     icon.title = getGroupName(actor) || "";
-    li.append(icon);
+    const before = li.querySelector(".ownership-viewer") ?? li.querySelector(".entry-controls");
+    if (before) li.insertBefore(icon, before);
+    else li.append(icon);
   }
 });
