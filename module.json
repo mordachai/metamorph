@@ -2,7 +2,7 @@
   "id": "metamorph",
   "title": "Metamorph",
   "description": "Swap actors between multiple forms — boss phases, lycanthropes, shapeshifters. System agnostic.",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "compatibility": {
     "minimum": "14",
     "verified": "14"
@@ -27,6 +27,6 @@
     }
   },
   "url": "https://github.com/mordachai/metamorph",
-  "manifest": "https://github.com/mordachai/metamorph/releases/download/v1.0.1/module.json",
-  "download": "https://github.com/mordachai/metamorph/releases/download/v1.0.1/module.zip"
+  "manifest": "https://github.com/mordachai/metamorph/releases/latest/download/module.json",
+  "download": "https://github.com/mordachai/metamorph/releases/latest/download/module.zip"
 }

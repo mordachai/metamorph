@@ -232,5 +232,5 @@ const beasts = await Metamorph.queryFilter({
 Search for _metamorph_ in Addon Modules OR paste this manifest URL into Foundry's module installer:
 
 ```
-https://github.com/mordachai/metamorph/releases/download/v1.0.1/module.json
+https://github.com/mordachai/metamorph/releases/latest/download/module.json
 ```

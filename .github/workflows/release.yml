@@ -59,11 +59,12 @@ jobs:
 
       - name: Update module.json URLs for this release
         run: |
-          VERSION=${{ steps.module-info.outputs.version }}
           REPO=${{ github.repository }}
+          # manifest must float to /latest so Foundry's update check always
+          # resolves the newest release; download floats too (latest asset = this one).
           jq \
-            --arg manifest "https://github.com/${REPO}/releases/download/v${VERSION}/module.json" \
-            --arg download "https://github.com/${REPO}/releases/download/v${VERSION}/module.zip" \
+            --arg manifest "https://github.com/${REPO}/releases/latest/download/module.json" \
+            --arg download "https://github.com/${REPO}/releases/latest/download/module.zip" \
             '.manifest = $manifest | .download = $download' \
             module.json > module.json.tmp
           mv module.json.tmp module.json
