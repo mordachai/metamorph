@@ -66,6 +66,20 @@ Hooks.once("init", () => {
 
   // Native query: players delegate the privileged swap to the active GM and
   // await a real result (no third-party socket lib). Runs on the GM's client.
+  // Preload a token texture on the local client. The GM fires this on every
+  // other active client before a swap so their redraw shows the new art on the
+  // first pass (no stale-texture flash / snap-back on player screens).
+  CONFIG.queries["metamorph.preloadTexture"] = async ({ src }) => {
+    try {
+      const loadTex = foundry.canvas?.loadTexture ?? globalThis.loadTexture;
+      if (loadTex && src) await loadTex(src);
+      return { ok: true };
+    } catch (err) {
+      console.warn("Metamorph | preloadTexture failed:", err);
+      return { ok: false, reason: err?.message ?? "error" };
+    }
+  };
+
   CONFIG.queries["metamorph.performSwap"] = async (payload) => {
     if (!game.user.isGM) return { ok: false, reason: "not-gm" };
     try {

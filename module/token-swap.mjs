@@ -31,6 +31,20 @@ export async function swapTokenForm(tokenDocument, targetActor, { hpMode, isReve
       console.warn("Metamorph | texture preload failed:", err);
     }
 
+    // The preload above only warms THIS client (the GM running the swap). Remote
+    // clients (the player whose token is morphing) receive a plain token update
+    // and redraw before the new texture is decoded — flashing/snapping back to the
+    // old art until a manual refresh. Have every other active client preload the
+    // texture FIRST, so their automatic redraw paints the correct art on pass one.
+    if (textureSrc) {
+      const others = game.users.filter(u => u.active && u.id !== game.user.id);
+      if (others.length) {
+        await Promise.allSettled(others.map(u =>
+          u.query("metamorph.preloadTexture", { src: textureSrc }, { timeout: 10 * 1000 })
+        ));
+      }
+    }
+
     // Serialize the full prototype — every field, every schema version, correctly typed.
     const update = foundry.utils.deepClone(proto.toObject());
     // Internal prototype-only fields that must not appear on a placed token update
