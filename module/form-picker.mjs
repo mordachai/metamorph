@@ -202,8 +202,22 @@ export class FormPickerApp extends HandlebarsApplicationMixin(ApplicationV2) {
 
     if (game.user.isGM) {
       await performSwap(payload);
-    } else {
-      game.socket.emit("module.metamorph", { action: "performSwap", payload });
+      return;
+    }
+
+    const gm = game.users.activeGM;
+    if (!gm) {
+      ui.notifications.warn("Metamorph: a GM must be online to change form.");
+      return;
+    }
+    try {
+      const res = await gm.query("metamorph.performSwap", payload, { timeout: 30 * 1000 });
+      if (!res?.ok) {
+        ui.notifications.error(`Metamorph: form change failed${res?.reason ? ` (${res.reason})` : ""}.`);
+      }
+    } catch (err) {
+      console.error("Metamorph | swap query failed:", err);
+      ui.notifications.warn("Metamorph: form change timed out or failed.");
     }
   }
 }

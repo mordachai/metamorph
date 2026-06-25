@@ -2,7 +2,7 @@
   "id": "metamorph",
   "title": "Metamorph",
   "description": "Swap actors between multiple forms — boss phases, lycanthropes, shapeshifters. System agnostic.",
-  "version": "1.2.0",
+  "version": "1.2.1",
   "compatibility": {
     "minimum": "14",
     "verified": "14"
@@ -20,6 +20,7 @@
   "styles": [
     "styles/metamorph.css"
   ],
+  "socket": true,
   "flags": {
     "hotReload": {
       "extensions": ["css", "hbs", "json"]
