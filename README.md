@@ -1,4 +1,4 @@
-This module is free. Wanna do a cool thing?
+<img width="1134" height="681" alt="image" src="https://github.com/user-attachments/assets/ba247c02-0795-4820-a03d-1f6af3188798" />This module is free. Wanna do a cool thing?
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/W7W01A1ZN1)
 
@@ -18,6 +18,8 @@ It's not just a change in appearance — it's a complete new character sheet eac
 
 A HUD button on any configured token opens a picker divided into **morph groups**. Click a portrait to instantly swap the token to that form. The token's appearance (portrait, size, bars, light, vision) updates from the target actor's prototype token. HP can optionally carry over.
 
+<img width="569" alt="image" src="https://github.com/user-attachments/assets/bc8ea023-e888-4ed9-b9e8-0ef9806374ed" />
+
 Morph groups are built from **filter presets** — reusable queries that find actors by type, system field values, or compendium source. One group can be shared across as many actors as you want (two druids in the party, same group).
 
 ---
@@ -29,6 +31,9 @@ Open the configuration window: **scene controls toolbar → masks icon**, or rig
 The configuration window has three tabs.
 
 ### Filters tab
+
+<img width="950" alt="image" src="https://github.com/user-attachments/assets/f3db253b-12c0-4bc7-b890-17b59ee8d085" />
+
 
 Filters are the building blocks. Each filter is a named query that finds actors matching a set of rules.
 
@@ -43,6 +48,9 @@ Filters are the building blocks. Each filter is a named query that finds actors 
 
 Groups bundle filters together and appear as sections in the HUD picker.
 
+<img width="829" alt="image" src="https://github.com/user-attachments/assets/f4dabac1-036b-4fc0-b7cb-6a8232a042bc" />
+
+
 1. Click **New Group** and name it.
 2. Expand the group (click the chevron).
 3. Use the **Add existing filter** dropdown to pick filters already defined, or click **New Filter** to create one and auto-add it to this group in one step.
@@ -50,6 +58,8 @@ Groups bundle filters together and appear as sections in the HUD picker.
 Groups are global — the same group can be assigned to multiple actors.
 
 ### Actors tab
+
+<img width="833" alt="image" src="https://github.com/user-attachments/assets/0cc701a9-e9f6-402b-8c72-544a599aa0f9" />
 
 1. Click any actor in the left panel.
 2. Set the **HP on swap** mode for that actor.
