@@ -148,6 +148,10 @@ Hooks: `metamorph.preMorph` (return `false` to cancel), `metamorph.morph`, `meta
 
 ### Vagabond Polymorph Spell Hotbar Macro
 
+#### Youtube video:
+
+[![Polymorph setup](https://img.youtube.com/vi/_IaDry4LCAs/0.jpg)](https://youtu.be/_IaDry4LCAs)
+
 1. **Select** your caster
 2. Mark your **target** (can be self)
 3. **Click** on the macro will display all available option for you to morph
