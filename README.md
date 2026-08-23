@@ -83,8 +83,9 @@ Groups bundle filters together and appear as sections in the HUD picker.
 1. Click **New Group** and name it.
 2. Expand the group (click the chevron).
 3. Use the **Add existing filter** dropdown, or click **New Filter** to create one and auto-add it in one step.
+4. Or skip filters entirely — drag actors straight onto the **Direct actors** drop zone under the filter list. No rules, no query, just a fixed list (e.g. a "Wild Shapes" group with a Dolphin, an Ant, and a Lion).
 
-Groups are global — the same group can be assigned to multiple actors.
+Groups are global — the same group (filters, direct actors, or both) can be assigned to multiple actors. Two druids sharing a "Wild Shapes" group each morph into their own private copy of the form, so HP/conditions never bleed between them — see [Form Naming](#form-naming) below.
 
 ### Morph Groups (Actors tab)
 
@@ -103,7 +104,18 @@ Select a token on the canvas and open its HUD. Click the **masks icon** to open 
 
 The picker shows each group as a section. Click a portrait to swap to that form.
 
-The token keeps its position, rotation, and elevation. Everything else (name, image, size, vision, light, bars) is replaced by the target actor's prototype token settings.
+The token keeps its position, rotation, and elevation. Its image, size, vision, light, and bars are replaced by the target form's prototype token settings — but the token's **name** always stays the character's own name. See below.
+
+---
+
+## Form Naming
+
+Every form you swap into (compendium entry or world actor) is imported as a private copy dedicated to that character — even when the same source actor is shared by a group, so two party members morphing into the same "Lion" never collide.
+
+- The copy's **sheet name** becomes `<Character> (<Form>)` — e.g. `Peter (Lion)`.
+- The **token** on the canvas keeps showing just `Peter` — the form name never appears on the nameplate.
+
+This copy lives in the world folder `Metamorph/<Character> - morphs` and is deleted automatically the next time that character changes form.
 
 ---
 

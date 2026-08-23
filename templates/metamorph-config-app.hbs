@@ -191,6 +191,27 @@
               <i class="fa-solid fa-plus"></i> New Filter
             </button>
           </div>
+
+          <div class="mm-cfg-grp-actors-hdr">
+            <span class="mm-hint">Direct actors <span class="mm-cfg-grp-count">({{actors.length}})</span></span>
+          </div>
+          <div class="mm-cfg-set-drop" data-group-id="{{id}}">
+            {{#each actors}}
+            <div class="mm-cfg-set-actor" title="{{name}}">
+              <img src="{{img}}" alt="{{name}}">
+              <span class="mm-cfg-set-actor-name">{{name}}</span>
+              <button type="button" data-action="removeActorFromGroup"
+                      data-group-id="{{../id}}" data-actor-id="{{actorId}}"
+                      {{#if packId}}data-pack-id="{{packId}}"{{/if}}
+                      title="Remove" class="mm-cfg-set-actor-del">
+                <i class="fa-solid fa-xmark"></i>
+              </button>
+            </div>
+            {{/each}}
+            {{#unless actors.length}}
+            <p class="mm-cfg-drop-hint"><i class="fa-solid fa-arrow-down"></i> Drop actors here to share a fixed list — no filter needed</p>
+            {{/unless}}
+          </div>
         </div>
 
       </div>
@@ -400,6 +421,13 @@
             expand it → add filters via the dropdown or <strong>New Filter</strong>.
             Groups are <strong>global</strong> — the same group can be assigned to multiple actors
             (two druids in the party sharing one "Wild Shapes" group).
+          </p>
+          <p class="mm-cfg-tut-step-desc">
+            No filter needed? Drag actors straight onto the <strong>Direct actors</strong> drop
+            zone under the filter list — a fixed shared list, same as Actor Forms but global.
+            Each character who morphs into a shared form gets their own private copy, named
+            <em>Character (Form)</em> on the sheet; the token itself always keeps showing the
+            character's own name.
           </p>
         </div>
       </div>

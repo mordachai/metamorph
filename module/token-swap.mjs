@@ -122,6 +122,59 @@ export async function getOrCreateMetamorphFolder(mainActor) {
 }
 
 /**
+ * Resolve (or create) the private per-character copy of a form.
+ *
+ * Every non-base target — compendium entry or world actor — gets its own temp
+ * actor cloned into the "Metamorph/<name> - morphs" folder, isolated per main
+ * actor (so two characters morphing into the same source "Lion" don't share a
+ * document). The clone's own name gets the "<Character> (<Form>)" treatment;
+ * its prototype token name is forced back to the character's name so the
+ * placed token never shows the form name. Reused across repeat swaps to the
+ * same form until the character morphs elsewhere (see prevTempActorId below).
+ */
+async function getOrCreateTempForm(mainActor, { packId, actorId }) {
+  const cached = game.actors.find(a => {
+    const td = getTempData(a);
+    return td?.mainActorId === mainActor.id
+      && (td?.sourcePackId ?? null) === (packId ?? null)
+      && td?.sourceActorId === actorId;
+  });
+  if (cached) return cached;
+
+  const folder = await getOrCreateMetamorphFolder(mainActor);
+  let created;
+
+  if (packId) {
+    const pack = game.packs.get(packId);
+    if (!pack) { ui.notifications.error(`Metamorph: pack "${packId}" not found.`); return null; }
+    created = await game.actors.importFromCompendium(pack, actorId, { folder: folder.id });
+  } else {
+    const source = game.actors.get(actorId);
+    if (!source) return null;
+    const data = source.toObject();
+    delete data._id;
+    data.folder = folder.id;
+    created = await Actor.create(data);
+  }
+
+  // Mirror the main actor's ownership so whoever controls the base form keeps
+  // control of the morphed form — otherwise a fresh clone lands with default
+  // (GM-only) ownership and the player loses control of the token.
+  await created.update({
+    name:               `${mainActor.name} (${created.name})`,
+    "prototypeToken.name": mainActor.name,
+    ownership:          foundry.utils.deepClone(mainActor.ownership),
+    [`flags.${MODULE}.temp`]: {
+      mainActorId:   mainActor.id,
+      sourcePackId:  packId ?? null,
+      sourceActorId: actorId,
+    },
+  });
+
+  return created;
+}
+
+/**
  * Full swap operation (GM only — players use sockets).
  *
  * @param {object} opts
@@ -143,45 +196,17 @@ export async function performSwap({ sceneId, tokenId, mainActorId, packId, actor
     await createGroup(mainActor, { groupName: mainActor.name, hpMode: "independent" });
   }
 
-  let targetActor;
-
-  if (packId) {
-    // Reuse already-imported temp actor if available
-    const cached = game.actors.find(a => {
-      const td = getTempData(a);
-      return td?.mainActorId === mainActorId && td?.sourceActorId === actorId;
-    });
-
-    if (cached) {
-      targetActor = cached;
-    } else {
-      const pack = game.packs.get(packId);
-      if (!pack) { ui.notifications.error(`Metamorph: pack "${packId}" not found.`); return; }
-
-      const folder = await getOrCreateMetamorphFolder(mainActor);
-      targetActor  = await game.actors.importFromCompendium(pack, actorId, { folder: folder.id });
-      await targetActor.setFlag(MODULE, "temp", {
-        mainActorId,
-        sourcePackId:  packId,
-        sourceActorId: actorId,
-      });
-      // Mirror the main actor's ownership so whoever controls the base form keeps
-      // control of the morphed form — otherwise an imported compendium actor lands
-      // with default (GM-only) ownership and the player loses control of the token.
-      await targetActor.update({ ownership: foundry.utils.deepClone(mainActor.ownership) });
-    }
-  } else {
-    // World actor (base form = mainActor, or manually-added world actor)
-    targetActor = actorId === mainActorId ? mainActor : game.actors.get(actorId);
-  }
+  const targetActor = (!packId && actorId === mainActorId)
+    ? mainActor
+    : await getOrCreateTempForm(mainActor, { packId, actorId });
 
   if (!targetActor) { ui.notifications.error("Metamorph: target actor not found."); return; }
 
-  const isRevert = !packId && targetActor.id === mainActorId;
+  const isRevert = targetActor.id === mainActorId;
   await swapTokenForm(tokenDoc, targetActor, { hpMode, isRevert });
 
-  // Track mainActorId on the token so the HUD button and picker work for world-actor swaps
-  // (compendium temp actors carry their own mainActorId flag; world actors do not)
+  // Track mainActorId on the token so the HUD button and picker work even if
+  // the target actor somehow carries no temp flag of its own.
   if (targetActor.id === mainActorId) {
     await tokenDoc.unsetFlag(MODULE, "mainActorId");
   } else {
@@ -192,7 +217,7 @@ export async function performSwap({ sceneId, tokenId, mainActorId, packId, actor
   // no other placed token still uses it. During combat a player may morph several
   // forms before reverting; a shared/cached temp actor must survive until the last
   // token leaves it. (This token already updated its actorId above, so it won't match.)
-  if (prevTempActorId && prevTempActorId !== actorId) {
+  if (prevTempActorId && prevTempActorId !== targetActor.id) {
     const prev = game.actors.get(prevTempActorId);
     const stillInUse = game.scenes.some(s => s.tokens.some(t => t.actorId === prevTempActorId));
     if (prev && isTempActor(prev) && !stillInUse) await prev.delete();

@@ -77,7 +77,7 @@ export function getActorGroups(actorId) {
 }
 
 export function actorHasAssignments(actorId) {
-  if (getActorGroups(actorId).some(g => (g.presetIds?.length ?? 0) > 0)) return true;
+  if (getActorGroups(actorId).some(g => (g.presetIds?.length ?? 0) > 0 || (g.actors?.length ?? 0) > 0)) return true;
   return getActorDirectSets(actorId).some(s => (s.actors?.length ?? 0) > 0);
 }
 

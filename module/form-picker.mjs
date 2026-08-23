@@ -68,12 +68,16 @@ export class FormPickerApp extends HandlebarsApplicationMixin(ApplicationV2) {
       const directSets  = getActorDirectSets(mainActor.id);
       const allPresets  = getFilterPresets();
 
-      // Filter-based group sections
+      // Filter-based + direct-actor group sections
       const groupSections = await Promise.all(
         actorGroups.map(async (g) => {
+          const seen   = new Set();
+          const actors = [];
+          for (const a of g.actors ?? []) {
+            const key = `${a.actorId}::${a.packId ?? ""}`;
+            if (!seen.has(key)) { seen.add(key); actors.push(a); }
+          }
           const presets = allPresets.filter(p => (g.presetIds ?? []).includes(p.id));
-          const seen    = new Set();
-          const actors  = [];
           try {
             for (const p of presets) {
               for (const a of await queryFilter(p)) {

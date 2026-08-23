@@ -61,6 +61,7 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
       toggleGroup:           MetamorphConfigApp.#onToggleGroup,
       removeFilterFromGroup: MetamorphConfigApp.#onRemoveFilterFromGroup,
       newFilterForGroup:     MetamorphConfigApp.#onNewFilterForGroup,
+      removeActorFromGroup:  MetamorphConfigApp.#onRemoveActorFromGroup,
       // Filters tab
       newPreset:             MetamorphConfigApp.#onNewPreset,
       editPreset:            MetamorphConfigApp.#onEditPreset,
@@ -165,6 +166,7 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
         open:             this.#openGroupIds.has(g.id),
         presets,
         availablePresets,
+        actors:           g.actors ?? [],
       };
     });
 
@@ -265,6 +267,29 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
         if (set.actors.some(a => `${a.actorId}::${a.packId ?? ""}` === key)) return;
         set.actors.push(entry);
         await saveActorDirectSets(this.#selectedActorId, sets);
+        this.render();
+      });
+    }
+
+    // Drop zones: group direct actors (Groups tab)
+    for (const zone of this.element.querySelectorAll(".mm-cfg-set-drop[data-group-id]")) {
+      zone.addEventListener("dragover", (e) => {
+        if (!this.#canAcceptDrop(e)) return;
+        e.preventDefault();
+        zone.classList.add("drag-over");
+      });
+      zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
+      zone.addEventListener("drop", async (e) => {
+        zone.classList.remove("drag-over");
+        const entry = this.#parseDrop(e);
+        if (!entry) return;
+        const groupId = zone.dataset.groupId;
+        const group   = getMorphGroups().find(g => g.id === groupId);
+        if (!group) return;
+        const key = `${entry.actorId}::${entry.packId ?? ""}`;
+        if ((group.actors ?? []).some(a => `${a.actorId}::${a.packId ?? ""}` === key)) return;
+        group.actors = [...(group.actors ?? []), entry];
+        await saveMorphGroup(group);
         this.render();
       });
     }
@@ -431,7 +456,7 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
   }
 
   static async #onAddGroup() {
-    const group = { id: foundry.utils.randomID(), name: "New Group", presetIds: [] };
+    const group = { id: foundry.utils.randomID(), name: "New Group", presetIds: [], actors: [] };
     await saveMorphGroup(group);
     this.#openGroupIds.add(group.id);
     this.#activeTab = "groups";
@@ -460,6 +485,18 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
     const group = getMorphGroups().find(g => g.id === groupId);
     if (!group) return;
     group.presetIds = (group.presetIds ?? []).filter(id => id !== presetId);
+    await saveMorphGroup(group);
+    this.render();
+  }
+
+  static async #onRemoveActorFromGroup(event, target) {
+    const { groupId, actorId, packId } = target.dataset;
+    if (!groupId || !actorId) return;
+    const group = getMorphGroups().find(g => g.id === groupId);
+    if (!group) return;
+    group.actors = (group.actors ?? []).filter(
+      a => !(a.actorId === actorId && (a.packId ?? "") === (packId ?? ""))
+    );
     await saveMorphGroup(group);
     this.render();
   }

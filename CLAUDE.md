@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Development
+
+No package.json, no lint/test tooling, no npm scripts. Edit `.mjs`/`.hbs`/`.css` directly and reload Foundry (CSS/hbs/json hot-reload per `module.json` `flags.hotReload`; `.mjs` needs a full world reload).
+
 ## Releasing
 
 No build step. Release is fully automated via GitHub Actions (`release.yml`): push to `master` with a changed `version` in `module.json` triggers a release. The workflow zips `module/`, `styles/`, `templates/`, and `module.json`, then publishes a GitHub Release tagged `v{version}`. Update `version` in `module.json` to cut a release.
@@ -15,14 +19,14 @@ Plain ES module FoundryVTT v13/v14 module. No bundler, no transpile step. Files 
 Configuration lives in **world settings** (`filter-presets.mjs` owns the CRUD):
 
 - `filterPresets` — `[{ id, name, sources: ["world"|packId], criteria: { actorTypes[], rules: [{path, value}] } }]`
-- `morphGroups` — `[{ id, name, presetIds[] }]` (reusable, shared across actors)
+- `morphGroups` — `[{ id, name, presetIds[], actors: [{actorId, packId?, name, img}] }]` (reusable, shared across actors). `presetIds` resolve via `queryFilter`; `actors` is a fixed hand-picked list (no filter) — same shape as `actorDirectSets`, but global/shared instead of per-actor. Both feed the same picker section, deduped by `actorId::packId`.
 - `actorAssignments` — `{ [actorId]: groupId[] }`
 - `actorDirectSets` — `{ [actorId]: [{ id, name, actors: [{actorId, packId?, name, img}] }] }`
 
 Per-actor flags:
 - Main actor: `flags.metamorph.group = { groupName, hpMode }`
-- Temp morph actor: `flags.metamorph.temp = { mainActorId, sourcePackId, sourceActorId }` — imported on demand into world folder `Metamorph/<name> - morphs`, deleted on next form change
-- Token (world-actor swaps): `flags.metamorph.mainActorId`
+- Temp morph actor: `flags.metamorph.temp = { mainActorId, sourcePackId, sourceActorId }` — `sourcePackId` is `null` for a world-actor source. Every non-base target (compendium entry **or** world actor) is cloned into a private per-main-actor copy in world folder `Metamorph/<name> - morphs`, imported/cloned on demand and deleted on next form change (`token-swap.mjs#getOrCreateTempForm`). Cloning (rather than swapping to the shared source document) keeps naming isolated when the same source actor is used by multiple characters (e.g. a shared "Wild Shapes" group).
+- Token (world-actor swaps): `flags.metamorph.mainActorId` — kept as a fallback for the picker/HUD; normally redundant since the temp clone already carries its own `mainActorId`.
 
 ### Module files
 
@@ -37,6 +41,10 @@ Per-actor flags:
 | `module/form-picker.mjs` | `FormPickerApp` (singleton, frameless) — HUD portrait-grid popup. Calls `requestSwap` on pick. |
 | `module/group-config.mjs`, `actor-browser.mjs`, `actor-assignment-app.mjs`, `filter-preset-app.mjs` | Older/secondary ApplicationV2 UIs. |
 | `module/resolve-img.mjs` | `resolveTokenImg(actor, "first" \| "random")` — expands wildcard token textures. |
+
+### Form naming
+
+A temp clone's own `name` becomes `"<mainActor.name> (<originalFormName>)"` (e.g. `Peter (Lion)`), but its `prototypeToken.name` is forced back to `mainActor.name` — so the actor sheet header shows the form while the placed token (and its nameplate) always shows the character's own name. Set once at clone time in `getOrCreateTempForm`; not re-applied on cache reuse.
 
 ### HP transfer
 
