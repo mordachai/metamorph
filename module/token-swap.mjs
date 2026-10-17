@@ -58,13 +58,19 @@ export async function swapTokenForm(tokenDocument, targetActor, { hpMode, isReve
     // stay unlinked, across both morph and revert.
     delete update.actorLink;
     // Override controlled fields
-    update.actorId      = targetActor.id;
     update.texture.src  = textureSrc;
 
     const sheetWasOpen = sourceActor.sheet?.rendered ?? false;
     if (sheetWasOpen) sourceActor.sheet.close();
 
     await _transferHp(sourceActor, targetActor, hpMode);
+    // Two writes: actor first, appearance second. Changing actorId together with
+    // texture in ONE update (Foundry v14) leaves the token's prepared texture on the
+    // old art — the actor-identity change stops the running texture animation and
+    // writes the previous src back into the prepared data, so every client redraws
+    // the old image while _source holds the new one (fixed only by a reload).
+    delete update.actorId;
+    await tokenDocument.update({ actorId: targetActor.id });
     await tokenDocument.update(update);
 
     if (canvas.hud?.token?.object === tokenDocument.object) {
@@ -139,7 +145,15 @@ async function getOrCreateTempForm(mainActor, { packId, actorId }) {
       && (td?.sourcePackId ?? null) === (packId ?? null)
       && td?.sourceActorId === actorId;
   });
-  if (cached) return cached;
+  if (cached) {
+    // Ownership may have changed on the main actor since the copy was made
+    // (player assigned later) — keep the form controllable by the same users.
+    const own = foundry.utils.deepClone(mainActor.ownership);
+    if (!foundry.utils.objectsEqual(own, cached.ownership)) {
+      await cached.update({ ownership: own }, { diff: false, recursive: false });
+    }
+    return cached;
+  }
 
   const folder = await getOrCreateMetamorphFolder(mainActor);
   let created;
