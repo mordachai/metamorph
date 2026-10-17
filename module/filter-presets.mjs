@@ -203,6 +203,8 @@ export async function queryFilter(preset) {
   for (const source of preset.sources ?? []) {
     if (source === "world") {
       for (const actor of game.actors) {
+        // Never offer another token's form copy (a "<Character> (<Form>)" temp actor) as a form
+        if (actor.flags?.metamorph?.temp) continue;
         if (matchesCriteria(actor, preset.criteria)) {
           results.push({ actorId: actor.id, name: actor.name, img: actor.img, type: actor.type });
         }

@@ -83,12 +83,14 @@ export function resolveTarget(target) {
  * @param {*} token   see resolveToken
  * @param {*} target  see resolveTarget
  * @param {object} [opts]
- * @param {string} [opts.hpMode]  one-shot HP transfer override
+ * @param {string} [opts.hpMode]  one-shot HP transfer override (also used when this form reverts)
+ * @param {boolean} [opts.ignoreOwnership]  let a player morph a token they don't own
+ *   (a spell cast on another creature); the GM still performs the swap
  * @returns {Promise<{ok: boolean, reason?: string}>}
  */
 export async function morph(token, target, opts = {}) {
   const tokenDoc = resolveToken(token);
-  if (!game.user.isGM && !tokenDoc.actor?.isOwner) {
+  if (!game.user.isGM && !opts.ignoreOwnership && !tokenDoc.actor?.isOwner) {
     ui.notifications.warn("Metamorph: you don't own this token.");
     return { ok: false, reason: "not-owner" };
   }
@@ -275,9 +277,10 @@ export async function promptForm(token, { title = "Choose Form", filter, filterI
 export async function polymorph(token, opts = {}) {
   const choice = await promptForm(token, opts);
   if (!choice) return null;
+  const swapOpts = { hpMode: opts.hpMode, ignoreOwnership: opts.ignoreOwnership };
   const res = choice.revert
-    ? await revert(token, { hpMode: opts.hpMode })
-    : await morph(token, choice, { hpMode: opts.hpMode });
+    ? await revert(token, swapOpts)
+    : await morph(token, choice, swapOpts);
   return res?.ok ? choice : null;
 }
 

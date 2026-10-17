@@ -87,14 +87,25 @@ export async function swapTokenForm(tokenDocument, targetActor, { hpMode, isReve
   }
 }
 
+/** HP block + its update path: `system.attributes.hp` (dnd5e…), `system.hp`, or `system.health`. */
+function _hpOf(actor) {
+  for (const path of ["attributes.hp", "hp", "health"]) {
+    const hp = foundry.utils.getProperty(actor.system ?? {}, path);
+    if (hp && typeof hp === "object" && "value" in hp) return { hp, path: `system.${path}.value` };
+  }
+  return null;
+}
+
 async function _transferHp(sourceActor, targetActor, hpModeOverride) {
   const mainActor = getMainActor(sourceActor) ?? sourceActor;
-  const mode = hpModeOverride ?? getGroupData(mainActor)?.hpMode ?? "independent";
+  // A form reverting uses the mode it was made with (getTempData(...).hpMode)
+  const mode = hpModeOverride ?? getTempData(sourceActor)?.hpMode ?? getGroupData(mainActor)?.hpMode ?? "independent";
   if (mode === "independent") return;
 
-  const srcHp = sourceActor.system?.attributes?.hp ?? sourceActor.system?.hp;
-  const tgtHp = targetActor.system?.attributes?.hp  ?? targetActor.system?.hp;
-  if (!srcHp || !tgtHp) return;
+  const src = _hpOf(sourceActor);
+  const tgt = _hpOf(targetActor);
+  if (!src || !tgt) return;
+  const srcHp = src.hp, tgtHp = tgt.hp;
 
   let newValue;
   if (mode === "keep-original") {
@@ -106,11 +117,7 @@ async function _transferHp(sourceActor, targetActor, hpModeOverride) {
     newValue = Math.round(pct * tgtHp.max);
   }
 
-  const hpPath = targetActor.system?.attributes?.hp !== undefined
-    ? "system.attributes.hp.value"
-    : "system.hp.value";
-
-  await targetActor.update({ [hpPath]: newValue });
+  await targetActor.update({ [tgt.path]: newValue });
 }
 
 // ── On-demand import + folder management ──────────────────────
@@ -161,7 +168,10 @@ async function getOrCreateTempForm(mainActor, { packId, actorId }) {
   if (packId) {
     const pack = game.packs.get(packId);
     if (!pack) { ui.notifications.error(`Metamorph: pack "${packId}" not found.`); return null; }
-    created = await game.actors.importFromCompendium(pack, actorId, { folder: folder.id });
+    // keepId: false — v14 imports keep the compendium id by default and REPLACE a world actor that already has
+    // it, so a second character taking the same form would overwrite the first one's copy (every token then
+    // points at one actor and reverts to the last character).
+    created = await game.actors.importFromCompendium(pack, actorId, { folder: folder.id }, { keepId: false });
   } else {
     const source = game.actors.get(actorId);
     if (!source) return null;
@@ -217,6 +227,10 @@ export async function performSwap({ sceneId, tokenId, mainActorId, packId, actor
   if (!targetActor) { ui.notifications.error("Metamorph: target actor not found."); return; }
 
   const isRevert = targetActor.id === mainActorId;
+  // Remember a one-shot HP mode on the form so its revert (HUD picker, API) transfers HP the same way
+  if (!isRevert && hpMode && getTempData(targetActor)?.hpMode !== hpMode) {
+    await targetActor.setFlag(MODULE, "temp.hpMode", hpMode);
+  }
   await swapTokenForm(tokenDoc, targetActor, { hpMode, isRevert });
 
   // Track mainActorId on the token so the HUD button and picker work even if

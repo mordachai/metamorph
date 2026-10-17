@@ -125,7 +125,10 @@ Hooks.on("renderTokenHUD", (hud, html, _data) => {
   const actor = tokenDoc.actor;
   if (!actor?.isOwner) return;
   const mainActor = getMainActorFromToken(tokenDoc) ?? actor;
-  if (!actorHasAssignments(mainActor.id)) return;
+  // A morphed token always gets the button (its picker leads with the base form),
+  // so a form made by a spell/macro can change back without any assignments.
+  const isMorphed = mainActor.id !== actor.id;
+  if (!isMorphed && !actorHasAssignments(mainActor.id)) return;
 
   const right = html.querySelector(".col.right");
   if (!right) return;
