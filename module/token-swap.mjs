@@ -122,9 +122,17 @@ async function _transferHp(sourceActor, targetActor, hpModeOverride) {
 
 // ── On-demand import + folder management ──────────────────────
 
+// Root found by flag wherever it sits, so a system may file it under its own folder.
+// Pre-flag worlds: the top-level "Metamorph" folder is adopted and stamped once.
 async function getOrCreateMetamorphRootFolder() {
-  return game.folders.find(f => f.type === "Actor" && f.name === "Metamorph" && !f.folder)
-    ?? await Folder.create({ name: "Metamorph", type: "Actor", color: "#4a1a6b" });
+  const flagged = game.folders.find(f => f.type === "Actor" && f.getFlag("metamorph", "root"));
+  if (flagged) return flagged;
+  const legacy = game.folders.find(f => f.type === "Actor" && f.name === "Metamorph" && !f.folder);
+  if (legacy) {
+    await legacy.setFlag("metamorph", "root", true);
+    return legacy;
+  }
+  return Folder.create({ name: "Metamorph", type: "Actor", color: "#4a1a6b", flags: { metamorph: { root: true } } });
 }
 
 export async function getOrCreateMetamorphFolder(mainActor) {
