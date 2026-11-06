@@ -2,9 +2,9 @@
   "id": "metamorph",
   "title": "Metamorph",
   "description": "Swap actors between multiple forms — boss phases, lycanthropes, shapeshifters. System agnostic.",
-  "version": "1.5.3",
+  "version": "1.5.4",
   "compatibility": {
-    "minimum": "14",
+    "minimum": "13",
     "verified": "14"
   },
   "authors": [
