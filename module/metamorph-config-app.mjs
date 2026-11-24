@@ -257,16 +257,17 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
       zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
       zone.addEventListener("drop", async (e) => {
         zone.classList.remove("drag-over");
-        const entry = this.#parseDrop(e);
-        if (!entry || !this.#selectedActorId) return;
+        const selectedActorId = this.#selectedActorId;
         const setId = zone.dataset.setId;
-        const sets  = foundry.utils.deepClone(getActorDirectSets(this.#selectedActorId));
+        const entry = await this.#parseDrop(e);
+        if (!entry || !selectedActorId) return;
+        const sets  = foundry.utils.deepClone(getActorDirectSets(selectedActorId));
         const set   = sets.find(s => s.id === setId);
         if (!set) return;
         const key = `${entry.actorId}::${entry.packId ?? ""}`;
         if (set.actors.some(a => `${a.actorId}::${a.packId ?? ""}` === key)) return;
         set.actors.push(entry);
-        await saveActorDirectSets(this.#selectedActorId, sets);
+        await saveActorDirectSets(selectedActorId, sets);
         this.render();
       });
     }
@@ -281,7 +282,7 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
       zone.addEventListener("dragleave", () => zone.classList.remove("drag-over"));
       zone.addEventListener("drop", async (e) => {
         zone.classList.remove("drag-over");
-        const entry = this.#parseDrop(e);
+        const entry = await this.#parseDrop(e);
         if (!entry) return;
         const groupId = zone.dataset.groupId;
         const group   = getMorphGroups().find(g => g.id === groupId);
@@ -323,35 +324,18 @@ export class MetamorphConfigApp extends HandlebarsApplicationMixin(ApplicationV2
            e.dataTransfer.types.includes("text/plain");
   }
 
-  #parseDrop(e) {
+  async #parseDrop(e) {
     e.preventDefault();
-    let raw;
-    try { raw = JSON.parse(e.dataTransfer.getData("application/json")); } catch { return null; }
-
-    // Internal sidebar drag
-    if (raw?.type === "metamorph-actor") {
-      return { actorId: raw.actorId, packId: raw.packId ?? null, name: raw.name, img: raw.img };
+    e.stopPropagation();
+    let raw = foundry.applications.ux.TextEditor.implementation.getDragEventData(e);
+    if (!raw?.type) {
+      try { raw = JSON.parse(e.dataTransfer.getData("application/json")); } catch { return null; }
     }
-
-    // Foundry actor sidebar drag: { type: "Actor", uuid: "Actor.ID" or "Compendium.pack.Actor.ID" }
-    if (raw?.type === "Actor" && raw?.uuid) {
-      const parts = raw.uuid.split(".");
-      if (parts[0] === "Actor") {
-        const actor = game.actors.get(parts[1]);
-        if (!actor) return null;
-        return { actorId: actor.id, packId: null, name: actor.name, img: actor.img || "icons/svg/mystery-man.svg" };
-      }
-      if (parts[0] === "Compendium") {
-        // Compendium.packId.Actor.documentId
-        const packId  = `${parts[1]}.${parts[2]}`;
-        const actorId = parts[4];
-        const name    = raw.name ?? actorId;
-        const img     = raw.img  ?? "icons/svg/mystery-man.svg";
-        return { actorId, packId, name, img };
-      }
-    }
-
-    return null;
+    let actor;
+    if (raw?.type === "metamorph-actor") actor = game.actors.get(raw.actorId);
+    else if (raw?.type === "Actor" && raw.uuid) actor = await foundry.utils.fromUuid(raw.uuid);
+    if (actor?.documentName !== "Actor" || actor.isToken) return null;
+    return { actorId: actor.id, packId: actor.pack ?? null, name: actor.name, img: actor.img || "icons/svg/mystery-man.svg" };
   }
 
   // ── Internal helpers ──────────────────────────────────────────

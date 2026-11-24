@@ -1,4 +1,4 @@
-import { getGroupData, getMainActor, getTempData, isTempActor, createGroup, getMainActorFromToken } from "./form-group.mjs";
+import { getGroupData, getMainActor, getTempData, isTempActor, createGroup } from "./form-group.mjs";
 import { resolveTokenImg } from "./resolve-img.mjs";
 
 const MODULE = "metamorph";
@@ -63,20 +63,47 @@ export async function swapTokenForm(tokenDocument, targetActor, { hpMode, isReve
     const sheetWasOpen = sourceActor.sheet?.rendered ?? false;
     if (sheetWasOpen) sourceActor.sheet.close();
 
-    await _transferHp(sourceActor, targetActor, hpMode);
+    const identity = { actorId: targetActor.id };
+    const mainActor = getMainActor(sourceActor) ?? sourceActor;
+    const sourceForm = getTempData(sourceActor);
+    // Before 1.5.5 a one-shot override lived on the shared temp actor.
+    const activeMode = tokenDocument.getFlag(MODULE, "hpMode") ?? sourceForm?.hpMode;
+    const revertMode = isRevert && activeMode !== "group" ? activeMode : undefined;
+    const mode = hpMode ?? revertMode ?? getGroupData(mainActor)?.hpMode ?? "independent";
+    if (!isRevert) identity[`flags.${MODULE}.hpMode`] = hpMode ?? "group";
+    else if (tokenDocument.getFlag(MODULE, "hpMode") != null) identity[`flags.${MODULE}.-=hpMode`] = null;
+    const sourceHp = _hpOf(sourceActor)?.hp;
+    const destinationHp = _hpOf(targetActor)?.hp;
+    let independentHp = destinationHp?.value;
+    if (sourceActor.id !== targetActor.id && Number.isFinite(sourceHp?.value)) {
+      if (!tokenDocument.actorLink) {
+        // Unlinked tokens keep their own history, even when a temp actor is deleted.
+        identity[`flags.${MODULE}.formHp.${_hpKey(sourceActor.id, sourceForm)}`] = sourceHp.value;
+        const key = _hpKey(targetActor.id, getTempData(targetActor));
+        independentHp = tokenDocument.getFlag(MODULE, "formHp")?.[key] ?? independentHp;
+      } else if (sourceForm) {
+        // Linked tokens share the temp actor. Remember its HP for the next clone.
+        await mainActor.setFlag(MODULE, `formHp.${_hpKey(sourceActor.id, sourceForm)}`, sourceHp.value);
+      }
+    }
     // Two writes: actor first, appearance second. Changing actorId together with
     // texture in ONE update (Foundry v14) leaves the token's prepared texture on the
     // old art — the actor-identity change stops the running texture animation and
     // writes the previous src back into the prepared data, so every client redraws
     // the old image while _source holds the new one (fixed only by a reload).
     delete update.actorId;
-    await tokenDocument.update({ actorId: targetActor.id });
+    await tokenDocument.update(identity);
+    // Changing actorId rebuilds an unlinked actor with its existing delta, which
+    // can still contain the departing form's HP. Write to the new token actor.
+    if (sourceActor.id !== targetActor.id && sourceHp && destinationHp) {
+      await _applyHp(tokenDocument.actor, sourceHp, mode, independentHp);
+    }
     await tokenDocument.update(update);
 
     if (canvas.hud?.token?.object === tokenDocument.object) {
       canvas.hud.token.bind(tokenDocument.object);
     }
-    if (sheetWasOpen) targetActor.sheet?.render(true);
+    if (sheetWasOpen) tokenDocument.actor.sheet?.render(true);
 
     // Notify other modules the swap completed (animations, effects, logging).
     Hooks.callAll("metamorph.morph", tokenDocument, targetActor, sourceActor);
@@ -96,28 +123,28 @@ function _hpOf(actor) {
   return null;
 }
 
-async function _transferHp(sourceActor, targetActor, hpModeOverride) {
-  const mainActor = getMainActor(sourceActor) ?? sourceActor;
-  // A form reverting uses the mode it was made with (getTempData(...).hpMode)
-  const mode = hpModeOverride ?? getTempData(sourceActor)?.hpMode ?? getGroupData(mainActor)?.hpMode ?? "independent";
-  if (mode === "independent") return;
+// Flag paths cannot contain dots. Include the original pack and actor IDs so
+// re-imports find the same entry and equal document IDs in two packs stay distinct.
+function _hpKey(actorId, temp) {
+  if (!temp) return actorId;
+  return [temp.mainActorId, temp.sourcePackId ?? "", temp.sourceActorId].join(":").replaceAll(".", ":");
+}
 
-  const src = _hpOf(sourceActor);
-  const tgt = _hpOf(targetActor);
-  if (!src || !tgt) return;
-  const srcHp = src.hp, tgtHp = tgt.hp;
-
-  let newValue;
+async function _applyHp(actor, srcHp, mode, independentHp) {
+  const tgt = _hpOf(actor);
+  if (!tgt) return;
+  const tgtHp = tgt.hp;
+  let newValue = independentHp;
   if (mode === "keep-original") {
     newValue = srcHp.value;
   } else if (mode === "absolute") {
     newValue = Math.clamp(srcHp.value, 0, tgtHp.max);
-  } else {
+  } else if (mode === "percent") {
     const pct = srcHp.max > 0 ? srcHp.value / srcHp.max : 1;
     newValue = Math.round(pct * tgtHp.max);
   }
 
-  await targetActor.update({ [tgt.path]: newValue });
+  if (Number.isFinite(newValue) && newValue !== tgtHp.value) await actor.update({ [tgt.path]: newValue });
 }
 
 // ── On-demand import + folder management ──────────────────────
@@ -192,16 +219,17 @@ async function getOrCreateTempForm(mainActor, { packId, actorId }) {
   // Mirror the main actor's ownership so whoever controls the base form keeps
   // control of the morphed form — otherwise a fresh clone lands with default
   // (GM-only) ownership and the player loses control of the token.
-  await created.update({
+  const temp = { mainActorId: mainActor.id, sourcePackId: packId ?? null, sourceActorId: actorId };
+  const linkedHp = mainActor.getFlag(MODULE, "formHp")?.[_hpKey(created.id, temp)];
+  const hp = _hpOf(created);
+  const changes = {
     name:               `${mainActor.name} (${created.name})`,
     "prototypeToken.name": mainActor.name,
     ownership:          foundry.utils.deepClone(mainActor.ownership),
-    [`flags.${MODULE}.temp`]: {
-      mainActorId:   mainActor.id,
-      sourcePackId:  packId ?? null,
-      sourceActorId: actorId,
-    },
-  });
+    [`flags.${MODULE}.temp`]: temp,
+  };
+  if (hp && Number.isFinite(linkedHp)) changes[hp.path] = linkedHp;
+  await created.update(changes);
 
   return created;
 }
@@ -235,10 +263,6 @@ export async function performSwap({ sceneId, tokenId, mainActorId, packId, actor
   if (!targetActor) { ui.notifications.error("Metamorph: target actor not found."); return; }
 
   const isRevert = targetActor.id === mainActorId;
-  // Remember a one-shot HP mode on the form so its revert (HUD picker, API) transfers HP the same way
-  if (!isRevert && hpMode && getTempData(targetActor)?.hpMode !== hpMode) {
-    await targetActor.setFlag(MODULE, "temp.hpMode", hpMode);
-  }
   await swapTokenForm(tokenDoc, targetActor, { hpMode, isRevert });
 
   // Track mainActorId on the token so the HUD button and picker work even if
